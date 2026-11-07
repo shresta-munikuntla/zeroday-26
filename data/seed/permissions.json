@@ -1,0 +1,162 @@
+[
+  {
+    "permission_id": "PERM-001",
+    "account_id": "admin_04",
+    "asset_id": "DC-SRV-04",
+    "permission_level": "admin",
+    "valid_from": "2026-01-15T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-002",
+    "account_id": "admin_04",
+    "asset_id": "DC-SRV-03",
+    "permission_level": "admin",
+    "valid_from": "2026-01-15T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-003",
+    "account_id": "admin_04",
+    "asset_id": "DC-SRV-05",
+    "permission_level": "admin",
+    "valid_from": "2026-03-01T00:00:00Z",
+    "valid_until": "2026-10-01T00:00:00Z"
+  },
+  {
+    "permission_id": "PERM-004",
+    "account_id": "admin_02",
+    "asset_id": "DC-SRV-01",
+    "permission_level": "admin",
+    "valid_from": "2026-02-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-005",
+    "account_id": "admin_02",
+    "asset_id": "DC-SRV-02",
+    "permission_level": "admin",
+    "valid_from": "2026-02-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-006",
+    "account_id": "admin_02",
+    "asset_id": "DC-SRV-06",
+    "permission_level": "admin",
+    "valid_from": "2026-02-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-007",
+    "account_id": "emp_jlee",
+    "asset_id": "DC-SRV-03",
+    "permission_level": "write",
+    "valid_from": "2026-04-10T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-008",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-01",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-009",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-02",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-010",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-03",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-011",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-04",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-012",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-05",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-013",
+    "account_id": "svc_backup",
+    "asset_id": "DC-SRV-06",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-014",
+    "account_id": "svc_backup",
+    "asset_id": "DC-DB-01",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-015",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-01",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-016",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-02",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-017",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-03",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-018",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-04",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-019",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-05",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  },
+  {
+    "permission_id": "PERM-020",
+    "account_id": "svc_monitor",
+    "asset_id": "DC-SRV-06",
+    "permission_level": "read",
+    "valid_from": "2026-01-01T00:00:00Z",
+    "valid_until": null
+  }
+]

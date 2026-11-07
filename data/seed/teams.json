@@ -1,0 +1,27 @@
+[
+  {
+    "team": "Network Security",
+    "team_channel": "mock:team-network-security",
+    "escalation_contact": "EMP-007"
+  },
+  {
+    "team": "Identity Security",
+    "team_channel": "mock:team-identity-security",
+    "escalation_contact": "EMP-007"
+  },
+  {
+    "team": "Server Administration",
+    "team_channel": "mock:team-server-admin",
+    "escalation_contact": "EMP-007"
+  },
+  {
+    "team": "Database Administration",
+    "team_channel": "mock:team-dba",
+    "escalation_contact": "EMP-007"
+  },
+  {
+    "team": "Security Operations",
+    "team_channel": "mock:team-secops",
+    "escalation_contact": "EMP-007"
+  }
+]

@@ -1,0 +1,93 @@
+[
+  {
+    "employee_id": "EMP-001",
+    "display_name": "Avery Chen",
+    "role": "Network Security Engineer",
+    "team": "Network Security",
+    "responsibilities_json": [
+      "Bastion host administration",
+      "Management network access control"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:avery.chen"
+  },
+  {
+    "employee_id": "EMP-002",
+    "display_name": "Jordan Okafor",
+    "role": "Network Security Analyst",
+    "team": "Network Security",
+    "responsibilities_json": [
+      "Backup coverage for bastion host"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:jordan.okafor"
+  },
+  {
+    "employee_id": "EMP-003",
+    "display_name": "Sam Delgado",
+    "role": "Identity Security Lead",
+    "team": "Identity Security",
+    "responsibilities_json": [
+      "Directory synchronization",
+      "Privileged account reviews"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:sam.delgado"
+  },
+  {
+    "employee_id": "EMP-004",
+    "display_name": "Riley Novak",
+    "role": "Systems Administrator",
+    "team": "Server Administration",
+    "responsibilities_json": [
+      "Web tier servers"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:riley.novak"
+  },
+  {
+    "employee_id": "EMP-005",
+    "display_name": "Morgan Patel",
+    "role": "Systems Administrator",
+    "team": "Server Administration",
+    "responsibilities_json": [
+      "Build infrastructure"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:morgan.patel"
+  },
+  {
+    "employee_id": "EMP-006",
+    "display_name": "Casey Brooks",
+    "role": "Database Administrator",
+    "team": "Database Administration",
+    "responsibilities_json": [
+      "Customer database operations and access"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:casey.brooks"
+  },
+  {
+    "employee_id": "EMP-007",
+    "display_name": "Taylor Kim",
+    "role": "Security Incident Lead",
+    "team": "Security Operations",
+    "responsibilities_json": [
+      "Incident escalation",
+      "Notification approval"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:taylor.kim"
+  },
+  {
+    "employee_id": "EMP-008",
+    "display_name": "Drew Larsen",
+    "role": "Systems Administrator",
+    "team": "Server Administration",
+    "responsibilities_json": [
+      "Reassigned; no active asset duties"
+    ],
+    "escalation_contact": "EMP-007",
+    "notification_channel": "mock:drew.larsen"
+  }
+]

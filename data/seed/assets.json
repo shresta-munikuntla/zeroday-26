@@ -1,0 +1,74 @@
+[
+  {
+    "asset_id": "DC-SRV-01",
+    "asset_name": "web-frontend-01",
+    "asset_type": "server",
+    "criticality": "medium",
+    "owner_team": "Server Administration",
+    "environment": "production",
+    "description": "Public web tier node 1 (synthetic)."
+  },
+  {
+    "asset_id": "DC-SRV-02",
+    "asset_name": "web-frontend-02",
+    "asset_type": "server",
+    "criticality": "medium",
+    "owner_team": "Server Administration",
+    "environment": "production",
+    "description": "Public web tier node 2 (synthetic)."
+  },
+  {
+    "asset_id": "DC-SRV-03",
+    "asset_name": "build-runner-01",
+    "asset_type": "server",
+    "criticality": "low",
+    "owner_team": "Server Administration",
+    "environment": "staging",
+    "description": "CI build runner (synthetic)."
+  },
+  {
+    "asset_id": "DC-SRV-04",
+    "asset_name": "jump-host-01",
+    "asset_type": "server",
+    "criticality": "high",
+    "owner_team": "Network Security",
+    "environment": "production",
+    "description": "Bastion host for administrative access to the management network (synthetic)."
+  },
+  {
+    "asset_id": "DC-SRV-05",
+    "asset_name": "identity-sync-01",
+    "asset_type": "server",
+    "criticality": "high",
+    "owner_team": "Identity Security",
+    "environment": "production",
+    "description": "Directory synchronization service host (synthetic)."
+  },
+  {
+    "asset_id": "DC-SRV-06",
+    "asset_name": "monitoring-01",
+    "asset_type": "server",
+    "criticality": "medium",
+    "owner_team": "Server Administration",
+    "environment": "production",
+    "description": "Metrics and monitoring host (synthetic)."
+  },
+  {
+    "asset_id": "DC-DB-01",
+    "asset_name": "customer-db-primary",
+    "asset_type": "database",
+    "criticality": "critical",
+    "owner_team": "Database Administration",
+    "environment": "production",
+    "description": "Primary customer records database (synthetic)."
+  },
+  {
+    "asset_id": "NET-SEG-MGMT",
+    "asset_name": "management-segment",
+    "asset_type": "network_segment",
+    "criticality": "critical",
+    "owner_team": "Network Security",
+    "environment": "production",
+    "description": "Out-of-band management network segment (synthetic)."
+  }
+]

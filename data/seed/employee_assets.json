@@ -1,0 +1,56 @@
+[
+  {
+    "employee_id": "EMP-001",
+    "asset_id": "DC-SRV-04",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-001",
+    "asset_id": "NET-SEG-MGMT",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-002",
+    "asset_id": "DC-SRV-04",
+    "responsibility_type": "backup",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-003",
+    "asset_id": "DC-SRV-05",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-004",
+    "asset_id": "DC-SRV-01",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-004",
+    "asset_id": "DC-SRV-02",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-005",
+    "asset_id": "DC-SRV-03",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-006",
+    "asset_id": "DC-DB-01",
+    "responsibility_type": "owner",
+    "active": true
+  },
+  {
+    "employee_id": "EMP-008",
+    "asset_id": "DC-SRV-06",
+    "responsibility_type": "owner",
+    "active": false
+  }
+]

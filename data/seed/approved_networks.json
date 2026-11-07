@@ -1,0 +1,14 @@
+[
+  {
+    "network_id": "NET-001",
+    "cidr": "203.0.113.0/25",
+    "description": "Corporate remote-access VPN egress",
+    "approved_for": "remote administrative access"
+  },
+  {
+    "network_id": "NET-002",
+    "cidr": "10.0.0.0/8",
+    "description": "Internal data-center network",
+    "approved_for": "internal access"
+  }
+]

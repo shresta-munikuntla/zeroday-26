@@ -1,0 +1,47 @@
+[
+  {
+    "account_id": "admin_04",
+    "account_type": "admin",
+    "role": "Infrastructure Administrator",
+    "known_ips_json": [
+      "10.20.1.14"
+    ],
+    "status": "active"
+  },
+  {
+    "account_id": "admin_02",
+    "account_type": "admin",
+    "role": "Web Platform Administrator",
+    "known_ips_json": [
+      "10.20.1.22"
+    ],
+    "status": "active"
+  },
+  {
+    "account_id": "svc_backup",
+    "account_type": "service",
+    "role": "Backup Service",
+    "known_ips_json": [
+      "10.20.9.5"
+    ],
+    "status": "active"
+  },
+  {
+    "account_id": "svc_monitor",
+    "account_type": "service",
+    "role": "Monitoring Service",
+    "known_ips_json": [
+      "10.20.9.6"
+    ],
+    "status": "active"
+  },
+  {
+    "account_id": "emp_jlee",
+    "account_type": "employee",
+    "role": "Build Engineer",
+    "known_ips_json": [
+      "10.30.4.51"
+    ],
+    "status": "active"
+  }
+]
