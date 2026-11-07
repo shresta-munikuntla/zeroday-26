@@ -96,8 +96,12 @@ zeroday-26/
 │   └── README.md                 what each file is for and why it exists
 ├── backend/                      🚧 planned — FastAPI app, agents, workflow, RAG, notifications, auth
 ├── frontend/                     🚧 planned — React dashboard
-└── docs/                         🚧 planned — architecture, data dictionary, demo script
+└── docs/
+    ├── architecture.md           ✅ architecture, system design, workflow, team breakdown, key decisions
+    └── datasets.md               ✅ how the datasets were built and why
 ```
+
+**New here?** Read this README → [docs/architecture.md](docs/architecture.md) → [docs/datasets.md](docs/datasets.md) → your issue.
 
 ## The data (all fictional)
 
@@ -133,7 +137,7 @@ Backend and frontend setup instructions will be added here as those components l
 | AI & Workflow | Nemotron client, RAG, Agent 3, Agent 4, audit log | [@Sadwitha11611](https://github.com/Sadwitha11611) |
 | People & Product | Agent 5, API, auth, dashboard, notifications | [@sathwika21n](https://github.com/sathwika21n) |
 
-Work is tracked in **[GitHub Issues](https://github.com/shresta-munikuntla/zeroday-26/issues)**. Issue titles start with the target hour (e.g. `[H4-7]`) from the 24-hour build plan.
+Work is tracked in **[GitHub Issues](https://github.com/shresta-munikuntla/zeroday-26/issues)** — one issue per person (P1, P2, P3), each with step-by-step tasks, acceptance criteria, and deliverables. How the three parts connect: [docs/architecture.md §4](docs/architecture.md#4-team-breakdown).
 
 ### Build plan (24 hours)
 
