@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes_auth import router as auth_router
+from backend.api.routes_ai import router as ai_router
 from backend.api.routes_incidents import router as incidents_router
 from backend.api.routes_notifications import router as notifications_router
 from backend.agents.employee_notification import match_and_draft
@@ -30,15 +31,8 @@ def ensure_agent_database() -> None:
 
 
 def sync_agent_incidents() -> None:
-    for outputs in run_detection_and_investigation():
-        report = dashboard_report(outputs)
-        with connect() as db:
-            db.execute("""INSERT INTO incidents (incident_id, severity, status, approval_status, summary, report_json)
-                VALUES (?, ?, 'awaiting_approval', 'pending', ?, ?)
-                ON CONFLICT(incident_id) DO UPDATE SET severity=excluded.severity,
-                    summary=excluded.summary, report_json=excluded.report_json""",
-                (report["incident_id"], report["severity"], report["summary"], json.dumps(report)))
-        match_and_draft(outputs)
+    from backend.workflow.orchestrator import run_incident_workflow
+    run_incident_workflow()
 
 
 @asynccontextmanager
@@ -55,6 +49,7 @@ app = FastAPI(title="SentinelAI API", version="0.1.0", lifespan=lifespan,
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_credentials=True,
                    allow_methods=["GET", "POST"], allow_headers=["Authorization", "Content-Type"])
 app.include_router(auth_router)
+app.include_router(ai_router)
 app.include_router(incidents_router)
 app.include_router(notifications_router)
 

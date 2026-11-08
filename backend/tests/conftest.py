@@ -25,13 +25,20 @@ FIXTURES = Path(__file__).with_name("fixtures")
 # ---------------------------------------------------------------- P3: API
 @pytest.fixture
 def initialized_store(tmp_path, monkeypatch):
+    # Production workflow writes P1 incidents too; isolate both stores so API
+    # tests cannot mutate the session-scoped read-only P1 seed assertions.
+    from backend.database.seed import seed
+    monkeypatch.setenv('DATABASE_URL', f'sqlite:///{tmp_path / "agent.sqlite3"}')
+    seed()
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.sqlite3")
     storage.initialize()
     initialize_users()
 
 
 @pytest.fixture
-def client(initialized_store):
+def client(initialized_store, monkeypatch):
+    from backend.rag import vector_store
+    monkeypatch.setattr(vector_store, 'get_collection', lambda: None)
     with TestClient(app) as test_client:
         yield test_client
 
@@ -83,3 +90,47 @@ def detections():
 def investigation(detections):
     from backend.agents.investigation import investigate
     return investigate(detections[0])
+
+
+# Workflow fixtures use their own isolated SQLite schema.
+import sqlite3
+from unittest.mock import Mock
+
+
+from backend.tests.fakes import agent1, agent2, agent5
+from backend.workflow.orchestrator import WorkflowServices
+from backend.workflow.storage import SQLiteWorkflowStore
+from backend.rag.vector_store import record_results
+from backend.agents.intelligence import _fallback
+
+
+
+@pytest.fixture
+def services(tmp_path):
+    connection = sqlite3.connect(tmp_path / 'workflow.sqlite')
+    connection.executescript((Path(__file__).parent / 'fakes/schema.sql').read_text())
+    logs = {x['event_id'] for x in json.loads((ROOT / 'data/seed/security_logs.json').read_text())}
+    permissions = {x['permission_id'] for x in json.loads((ROOT / 'data/seed/permissions.json').read_text())}
+    sources = [{'doc_id': 'POL-003', 'title': 'Privileged Access Management Policy',
+                'section': '2. Expired Permissions', 'source_type': 'internal_policy_sample',
+                'text': 'Review expired permissions.', 'url': '', 'score': 0.6}]
+    def analyze(investigation):
+        record_results(sources)
+        return _fallback(sources, [])
+    result = WorkflowServices(
+        detect=Mock(side_effect=agent1.detect), investigate=Mock(side_effect=agent2.investigate),
+        event_exists=Mock(side_effect=lambda identifier: identifier in logs),
+        permission_exists=Mock(side_effect=lambda identifier: identifier in permissions),
+        match_and_draft=Mock(side_effect=agent5.match_and_draft),
+        store=SQLiteWorkflowStore(connection), analyze=Mock(side_effect=analyze),
+    )
+    yield result
+    connection.close()
+
+
+@pytest.fixture(autouse=True)
+def offline_nemotron_by_default(monkeypatch, request):
+    # Unit/API tests must never consume Brev credits, even with a real local .env.
+    if request.node.path.name != 'test_nemotron_live.py':
+        from backend import config
+        monkeypatch.setattr(config, 'NEMOTRON_API_KEY', '')

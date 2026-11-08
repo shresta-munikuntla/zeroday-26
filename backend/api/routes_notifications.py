@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.notifications.registry import get_adapter
-from backend.security.audit import write_audit_event
+from backend.security.audit import write_api_audit_event as write_audit_event
 from backend.security.auth import require_role
 from backend.storage import connect, rows
 
