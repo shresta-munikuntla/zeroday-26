@@ -74,47 +74,6 @@ def initialize() -> None:
             db.executemany("INSERT INTO teams VALUES (?, ?, ?)", [
                 (t["team"], t["team_channel"], t["escalation_contact"]) for t in fixture("teams")
             ])
-        if db.execute("SELECT COUNT(*) FROM incidents WHERE incident_id = 'INC-001'").fetchone()[0] == 0:
-            report = demo_report()
-            db.execute("INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?)", (
-                "INC-001", "high", "awaiting_approval", "pending", report["summary"], json.dumps(report)
-            ))
-
-
-def demo_report() -> dict[str, Any]:
-    logs = {x["event_id"]: x for x in fixture("security_logs")}
-    assets = {x["asset_id"]: x for x in fixture("assets")}
-    evidence_ids = [f"LOG-{n}" for n in range(101, 106)]
-    affected = ["DC-SRV-04", "DC-SRV-05", "DC-DB-01"]
-    return {
-        "incident_id": "INC-001", "severity": "high",
-        "summary": "Unfamiliar privileged access reached three production assets, including an expired-permission server and a critical database.",
-        "status": "awaiting_approval", "approval_status": "pending", "account_id": "admin_04",
-        "time_window": {"start": "2026-11-07T09:10:00Z", "end": "2026-11-07T09:18:00Z"},
-        "timeline": [{"event_id": event_id, "timestamp": logs[event_id]["timestamp"], "event_type": logs[event_id]["event_type"], "asset_id": logs[event_id].get("asset_id"), "outcome": logs[event_id].get("status")} for event_id in evidence_ids],
-        "affected_asset_ids": affected,
-        "assets": [{k: assets[a][k] for k in ("asset_id", "asset_name", "asset_type", "criticality", "owner_team")} for a in affected],
-        "evidence_ids": evidence_ids,
-        "mitre_techniques": [
-            {"id": "T1078", "name": "Valid Accounts"},
-            {"id": "T1133", "name": "External Remote Services"},
-            {"id": "T1021.004", "name": "SSH"},
-        ],
-        "policy_references": ["POL-001", "POL-002", "POL-003", "POL-004"],
-        "recommended_actions": [
-            "Verify whether the remote access path and Saturday activity were authorized.",
-            "Review and expire stale privileged access to DC-SRV-05.",
-            "Review denied access attempts to DC-DB-01 and preserve relevant records.",
-        ],
-        "facts": [
-            "The source address was unfamiliar and outside approved networks.",
-            "Access to DC-SRV-04 was authorized by its recorded permission (PERM-001).",
-            "Access to DC-SRV-05 succeeded after its permission had expired.",
-            "Two attempts to access DC-DB-01 were denied; no data-transfer evidence was found.",
-        ],
-    }
-
-
 def rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
     with connect() as db:
         return [dict(r) for r in db.execute(query, params).fetchall()]

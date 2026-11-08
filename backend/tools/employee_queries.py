@@ -24,3 +24,12 @@ def get_employee_matches(asset_ids: list[str]) -> list[dict]:
                     "role": "team", "team": asset["owner_team"], "asset_id": asset_id,
                     "responsibility_type": "team_fallback", "notification_channel": team["team_channel"]})
     return matches
+
+
+def get_escalation_contact(team: str) -> dict | None:
+    """Look up the escalation contact configured for an owner team."""
+    with connect() as db:
+        row = db.execute("""SELECT e.employee_id, e.display_name, e.role
+            FROM teams t JOIN employees e ON e.employee_id=t.escalation_contact
+            WHERE t.team=? AND e.active=1""", (team,)).fetchone()
+    return dict(row) if row else None
