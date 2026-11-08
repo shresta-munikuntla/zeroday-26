@@ -4,7 +4,7 @@
 
 SentinelAI reads security logs, spots suspicious activity, works out what it might affect, looks up relevant security guidance, and drafts a clear alert for **the specific person responsible** for the affected servers. A human approves the alert before it is sent. Nothing is ever changed on infrastructure automatically.
 
-> **Status:** early build. The synthetic dataset and knowledge base are in place (`data/`). Backend, agents, and dashboard are tracked as GitHub Issues.
+> **Status:** early build. Agent 1 detection, Agent 2 investigation, Agent 5 owner notifications, and the reviewer dashboard are available. The demo runs Agents 1 and 2 on the seeded SQLite data and passes their outputs to Agent 5. Agent 3 intelligence/RAG and Agent 4 orchestration are not yet integrated.
 
 ---
 
@@ -75,7 +75,7 @@ It also shows restraint: an admin logging in through the **approved VPN**, a use
 | LLM | **NVIDIA Nemotron** on **Brev**, via the OpenAI-compatible `openai` client | One shared model endpoint for all agents |
 | Orchestration | **LangGraph** (or plain sequential Python) | Ordered workflow with shared state |
 | Backend API | **FastAPI** + **Pydantic** + Uvicorn | Typed request validation, async |
-| Database | **SQLite** via **SQLAlchemy** | Zero-setup single source of truth |
+| Database | **SQLite** (Python's built-in `sqlite3`) | Zero-setup single source of truth, nothing to install |
 | RAG | **ChromaDB** + **sentence-transformers** (`all-MiniLM-L6-v2`) | Local vector search over policies and MITRE data |
 | Auth & security | **PyJWT**, **pwdlib[argon2]**, slowapi (rate limiting) | Login, role checks, hashed passwords |
 | Frontend | **React** + axios + react-router | Incident dashboard and approval screen |
@@ -94,8 +94,8 @@ zeroday-26/
 │   ├── knowledge/                RAG documents: MITRE subset, policies, past incidents, injection test doc
 │   ├── scripts/                  generate_seed.py, extract_mitre.py
 │   └── README.md                 what each file is for and why it exists
-├── backend/                      🚧 planned — FastAPI app, agents, workflow, RAG, notifications, auth
-├── frontend/                     🚧 planned — React dashboard
+├── backend/                      Agent 1/2, Agent 5, FastAPI API, SQLite, reviewer auth, mock notifications
+├── frontend/                     React incident review dashboard
 └── docs/
     ├── architecture.md           ✅ architecture, system design, workflow, team breakdown, key decisions
     └── datasets.md               ✅ how the datasets were built and why
@@ -119,15 +119,53 @@ IPs come from reserved documentation ranges (RFC 5737), so no real address appea
 
 ## Getting started
 
-Right now only the dataset can be regenerated:
+### Backend
+
+Requirements: Python 3.11+.
 
 ```bash
-git clone https://github.com/shresta-munikuntla/zeroday-26.git
-cd zeroday-26
-python -I data/scripts/generate_seed.py      # rebuilds data/seed/ (deterministic)
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-Backend and frontend setup instructions will be added here as those components land. Configuration will live in a local `.env` (copied from `.env.example`) — **never commit real keys**.
+Edit `.env`: set a long random `JWT_SECRET_KEY` plus unique `DEMO_VIEWER_PASSWORD` and `DEMO_REVIEWER_PASSWORD` values. The passwords are Argon2-hashed at startup. Then run:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
+
+### Frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` and sign in with `reviewer` or `viewer` plus the corresponding password from `.env`. Reviewers can approve/reject and send; viewers can read the incident. The demo data and mock destination are fictional. Run `python -m pytest` from the repository root to execute the backend acceptance tests.
+
+### Data and agents (P1)
+
+No `.env` or API keys needed. From the repository root, with the virtual environment active (Windows: `.venv\Scripts\Activate.ps1`):
+
+```bash
+python -m backend.database.seed                 # build sentinelai.db from data/seed/ (deletes the old one)
+python -m backend.agents.threat_detection       # Agent 1: print detected incidents
+python -m backend.agents.investigation          # Agent 1 + Agent 2: print the investigation
+python -m pytest                                # run all tests
+
+python -I data/scripts/generate_seed.py         # (only if you change the dataset) regenerate data/seed/
+```
+
+Fixtures for teammates (the real Agent 1 / Agent 2 output for INC-001) live in `backend/tests/fixtures/`.
+
+Configuration stays in a local `.env` (copied from `.env.example`) — **never commit real keys or passwords**.
 
 ## Team and ownership
 

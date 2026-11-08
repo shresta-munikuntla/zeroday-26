@@ -64,6 +64,7 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
 
 # Flask stuff:
 instance/
@@ -205,6 +206,9 @@ cython_debug/
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, you
 #   could uncomment the following to ignore the entire vscode folder
 # .vscode/
+.DS_Store
+frontend/node_modules/
+frontend/dist/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
@@ -221,3 +225,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# SentinelAI local database (rebuild with: python -m backend.database.seed)
+sentinelai.db

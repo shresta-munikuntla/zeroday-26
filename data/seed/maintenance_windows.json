@@ -5,10 +5,10 @@
     "recurrence": "daily",
     "start_time_utc": "02:00",
     "end_time_utc": "03:00",
-    "account_ids": [
+    "account_ids_json": [
       "svc_backup"
     ],
-    "asset_ids": [
+    "asset_ids_json": [
       "DC-SRV-01",
       "DC-SRV-02",
       "DC-SRV-03",

@@ -6,6 +6,7 @@ import json
 import re
 
 from backend import config
+from backend.storage import connect
 
 _connection = ContextVar('audit_connection', default=None)
 _FIELDS = {'step', 'status', 'severity', 'evidence_ids', 'document_ids',
@@ -60,3 +61,18 @@ def list_audit_events(incident_id):
         event['details'] = json.loads(event.pop('details_json'))
         events.append(event)
     return events
+
+
+# API events use the separate application store and its schema.
+
+
+def write_api_audit_event(incident_id: str, actor_id: str, action: str, detail: dict) -> None:
+    with connect() as db:
+        db.execute("INSERT INTO audit_events (incident_id, actor_id, action, detail_json) VALUES (?, ?, ?, ?)",
+                   (incident_id, actor_id, action, json.dumps(detail)))
+
+
+def list_api_audit_events(incident_id: str) -> list[dict]:
+    with connect() as db:
+        events = db.execute("SELECT * FROM audit_events WHERE incident_id = ? ORDER BY event_id", (incident_id,)).fetchall()
+    return [{**dict(event), "detail": json.loads(event["detail_json"])} for event in events]
