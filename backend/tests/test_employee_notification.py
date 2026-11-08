@@ -1,5 +1,4 @@
 from backend.agents.employee_notification import match_and_draft
-from backend.storage import demo_report
 from backend.tools.employee_queries import get_employee_matches
 
 
@@ -25,14 +24,20 @@ def test_inactive_owner_routes_to_team_channel(initialized_store):
     assert matches[0]["employee_id"] == "TEAM:Server Administration"
 
 
-def test_drafts_are_personal_and_only_include_local_evidence(initialized_store):
-    drafts = match_and_draft(demo_report())
+def test_drafts_are_personal_and_only_include_agent_evidence(initialized_store, detections, investigation):
+    detection = detections[0]
+    drafts = match_and_draft({"detection": detection, "investigation": investigation})
     assert [d["recipient_id"] for d in drafts] == ["EMP-001", "EMP-003", "EMP-006"]
     by_recipient = {d["recipient_id"]: d for d in drafts}
-    assert "LOG-101, LOG-102" in by_recipient["EMP-001"]["body"]
+    assert "LOG-101" in by_recipient["EMP-001"]["body"]
+    assert "LOG-102" in by_recipient["EMP-001"]["body"]
     assert "DC-SRV-05" not in by_recipient["EMP-001"]["body"]
-    assert "LOG-101, LOG-103" in by_recipient["EMP-003"]["body"]
+    assert "LOG-101" in by_recipient["EMP-003"]["body"]
+    assert "LOG-103" in by_recipient["EMP-003"]["body"]
     assert "DC-DB-01" not in by_recipient["EMP-003"]["body"]
-    assert "LOG-101, LOG-104, LOG-105" in by_recipient["EMP-006"]["body"]
+    assert "LOG-101" in by_recipient["EMP-006"]["body"]
+    assert "LOG-104" in by_recipient["EMP-006"]["body"]
+    assert "LOG-105" in by_recipient["EMP-006"]["body"]
     assert "DC-SRV-04" not in by_recipient["EMP-006"]["body"]
     assert all("details_json" not in d["body"] and "blame" not in d["body"].lower() for d in drafts)
+    assert all(d["incident_id"] == detection["incident_id"] for d in drafts)

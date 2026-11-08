@@ -10,9 +10,9 @@ The demo uses fictional seed data and the mock notification adapter. A mocked de
 
 ## Walkthrough
 
-1. Click **Run demo scenario**. SentinelAI loads `INC-001`, the synthetic unfamiliar `admin_04` login and the resulting access events.
+1. Click **Run demo scenario**. The API runs Agent 1 detection and Agent 2 investigation on the seeded SQLite database, then sends those outputs to Agent 5. The current synthetic scenario produces `INC-001`.
 2. Read the incident summary: the activity occurred Saturday from an unfamiliar source; access to `DC-SRV-05` succeeded after its permission expired; two attempts against critical `DC-DB-01` were denied. No data transfer is claimed.
-3. Review the timeline IDs `LOG-101` through `LOG-105`, the affected asset criticalities, ATT&CK references, policy IDs, and suggested response actions.
+3. Review the timeline IDs, affected asset criticalities, Agent 2's permission checks and confirmed facts, and its benign explanations to check. ATT&CK and policy sections are waiting for Agent 3's RAG integration.
 4. Expand each **Preview message**. Show that `Avery Chen` receives only the bastion host's evidence, `Sam Delgado` only the identity server's evidence, and `Casey Brooks` only the database evidence. Each includes login event `LOG-101` and explains why the owner was selected.
 5. Click **Approve notifications**. The reviewer identity and timestamp are saved. Open the audit trail to show the `approved` event.
 6. Click **Send notifications**. The mock adapter records each result as **Mocked — not actually sent**. The notification records and audit history show the outcome.
@@ -26,4 +26,4 @@ The demo uses fictional seed data and the mock notification adapter. A mocked de
 - `EMP-002` is a backup and receives nothing; `EMP-008` has an inactive mapping and receives nothing.
 - Querying `DC-SRV-06` alone routes to `mock:team-server-admin` because there is no active individual owner.
 
-The demo endpoint currently uses a deterministic synthetic workflow result. When P2's `run_incident_workflow()` is available, replace the fixture construction in `backend/api/routes_incidents.py` with that workflow call.
+The demo uses the real Agent 1 and Agent 2 functions against the synthetic database. Agent 3 intelligence and Agent 4 orchestration can be connected when those components are available.

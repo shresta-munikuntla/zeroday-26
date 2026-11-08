@@ -4,7 +4,7 @@
 
 SentinelAI reads security logs, spots suspicious activity, works out what it might affect, looks up relevant security guidance, and drafts a clear alert for **the specific person responsible** for the affected servers. A human approves the alert before it is sent. Nothing is ever changed on infrastructure automatically.
 
-> **Status:** early build. The synthetic dataset, a fixture-backed API and owner-notification workflow, and a reviewer dashboard are available. The intelligence workflow is currently a synthetic demo result; integrations with the P1/P2 components can replace the fixture path as they land.
+> **Status:** early build. Agent 1 detection, Agent 2 investigation, Agent 5 owner notifications, and the reviewer dashboard are available. The demo runs Agents 1 and 2 on the seeded SQLite data and passes their outputs to Agent 5. Agent 3 intelligence/RAG and Agent 4 orchestration are not yet integrated.
 
 ---
 
@@ -94,7 +94,7 @@ zeroday-26/
 │   ├── knowledge/                RAG documents: MITRE subset, policies, past incidents, injection test doc
 │   ├── scripts/                  generate_seed.py, extract_mitre.py
 │   └── README.md                 what each file is for and why it exists
-├── backend/                      FastAPI API, Agent 5, SQLite fixtures, reviewer auth, mock notifications
+├── backend/                      Agent 1/2, Agent 5, FastAPI API, SQLite, reviewer auth, mock notifications
 ├── frontend/                     React incident review dashboard
 └── docs/
     ├── architecture.md           ✅ architecture, system design, workflow, team breakdown, key decisions
@@ -136,7 +136,7 @@ Edit `.env`: set a long random `JWT_SECRET_KEY` plus unique `DEMO_VIEWER_PASSWOR
 uvicorn backend.main:app --reload
 ```
 
-The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup the backend seeds a local SQLite database from `data/seed/`. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
+The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
 
 ### Frontend
 

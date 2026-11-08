@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.agents.employee_notification import match_and_draft
+from backend.agents.incident_workflow import dashboard_report, run_detection_and_investigation
 from backend.security.audit import list_audit_events, write_audit_event
 from backend.security.auth import current_user, require_role
-from backend.storage import connect, demo_report, rows
+from backend.storage import connect, rows
 
 router = APIRouter(prefix="/api/incidents", tags=["incidents"])
 Viewer = Annotated[dict, Depends(current_user)]
@@ -48,14 +49,23 @@ def notification_views(incident_id: str) -> list[dict]:
 
 @router.post("/run-demo")
 def run_demo(payload: DemoRequest, user: Viewer):
-    report = demo_report()
-    match_and_draft(report)
+    candidates = run_detection_and_investigation()
+    if not candidates:
+        raise HTTPException(409, "No suspicious incidents were detected in the current data")
+    outputs = candidates[0]
+    report = dashboard_report(outputs)
     with connect() as db:
-        db.execute("UPDATE incidents SET status='awaiting_approval', approval_status='pending', report_json=? WHERE incident_id='INC-001'",
-                   (json.dumps(report),))
-        db.execute("UPDATE notifications SET status='draft', approved_by=NULL, approved_at=NULL, sent_at=NULL, delivery_result=NULL WHERE incident_id='INC-001'")
-    write_audit_event("INC-001", user["user_id"], "demo_run", {"source": "synthetic fixture"})
-    incident = incident_or_404("INC-001")
+        db.execute("""INSERT INTO incidents (incident_id, severity, status, approval_status, summary, report_json)
+            VALUES (?, ?, 'awaiting_approval', 'pending', ?, ?)
+            ON CONFLICT(incident_id) DO UPDATE SET severity=excluded.severity,
+                status='awaiting_approval', approval_status='pending', summary=excluded.summary,
+                report_json=excluded.report_json""",
+            (report["incident_id"], report["severity"], report["summary"], json.dumps(report)))
+        db.execute("UPDATE notifications SET status='draft', approved_by=NULL, approved_at=NULL, sent_at=NULL, delivery_result=NULL WHERE incident_id=?",
+                   (report["incident_id"],))
+    match_and_draft(outputs)
+    write_audit_event(report["incident_id"], user["user_id"], "demo_run", {"source": "Agent 1 and Agent 2"})
+    incident = incident_or_404(report["incident_id"])
     return {**incident["report"], "status": incident["status"], "approval_status": incident["approval_status"]}
 
 

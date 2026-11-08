@@ -7,15 +7,19 @@ import { approve, getIncident, getIncidents, reject, runDemo, send } from './api
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(sessionStorage.getItem('sentinel_user') || 'null'));
   const [incidents, setIncidents] = useState([]);
-  const [selected, setSelected] = useState('INC-001');
+  const [selected, setSelected] = useState('');
   const [incident, setIncident] = useState(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState('');
   const notify = useCallback(message => { setToast(message); window.setTimeout(() => setToast(''), 3400); }, []);
   const refresh = useCallback(async (id = selected) => {
     try {
-      const [list, detail] = await Promise.all([getIncidents(), getIncident(id)]);
-      setIncidents(list); setIncident(detail); setSelected(id);
+      const list = await getIncidents();
+      setIncidents(list);
+      const targetId = list.some(item => item.incident_id === id) ? id : list[0]?.incident_id;
+      if (!targetId) { setIncident(null); setSelected(''); return; }
+      const detail = await getIncident(targetId);
+      setIncident(detail); setSelected(targetId);
     } catch (error) {
       if (error.response?.status === 401) { sessionStorage.clear(); setUser(null); }
       else if (error.response?.status !== 404) notify('Could not load the incident. Check the backend connection.');
