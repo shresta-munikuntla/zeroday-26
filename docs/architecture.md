@@ -42,7 +42,7 @@ Only the backend talks to Nemotron, Photon, or the database. The browser never s
 
 | Store | Holds | Queried by | Why |
 |---|---|---|---|
-| **SQLite** (via SQLAlchemy Core) | logs, accounts, permissions, assets, employees, teams, approved networks, maintenance windows, incidents, notifications, audit events | exact lookups: "events for admin_04 between 09:00 and 09:30" | Facts must be exact and verifiable by ID |
+| **SQLite** (Python's built-in `sqlite3`) | logs, accounts, permissions, assets, employees, teams, approved networks, maintenance windows, incidents, notifications, audit events | exact lookups: "events for admin_04 between 09:00 and 09:30" | Facts must be exact and verifiable by ID |
 | **ChromaDB** | MITRE techniques, policies, past incidents (chunked by `##` section) | similarity search: "guidance for privileged login from unknown IP" | Guidance is found by meaning, not exact match |
 
 Raw logs are **never** put in ChromaDB.
@@ -145,10 +145,20 @@ detected → investigating → awaiting_approval → notified → closed
 
 | Decision | Choice | Reason |
 |---|---|---|
-| Database | SQLite through SQLAlchemy Core (`text()` + bound params), no ORM | Zero setup; `DATABASE_URL` can switch to Postgres later |
+| Database | SQLite via Python's built-in `sqlite3`, `?` placeholders only, no ORM | No install, simplest to learn; Postgres isn't needed in 24 h |
+| Timestamps | Stored as ISO-8601 UTC text (`2026-11-07T09:10:00Z`); parsed to `datetime` only to compare | Sorts correctly as text; readable in a DB viewer |
+| JSON / boolean columns | `json.dumps` in, `json.loads` out; booleans as `1`/`0` | SQLite has no list or boolean type |
+| Reseeding | `seed.py` deletes the DB file and rebuilds from `data/seed/` | Always a clean, repeatable state |
+| Incident ID | `INC-001`, `INC-002`… (`MAX + 1`), **assigned by Agent 1**; orchestrator rejects duplicates by evidence-ID set | Matches the Agent 1 contract |
+| Incident grouping | Same **account + source IP**, each event ≤ **30 min** after the previous one | Keeps one attack together without merging normal work |
+| Authorization check | Permission valid **at access time** (`valid_from ≤ t < valid_until`, empty = no end) → `authorized` / `expired` / `none` | Catches stale access (PERM-003) |
+| Off-hours | Outside Mon–Fri 07:00–19:00 UTC **adds a reason, never triggers alone** | Strengthens evidence without false alarms |
+| Confidence | 0.5 + 0.1 per rule fired + 0.1 if a critical asset is involved, capped at 0.9 | Explainable; never claims certainty |
+| Thresholds | Named constants in code (`GROUP_WINDOW_MIN = 30`, `FAILED_LOGIN_LIMIT = 5`, …) | One-line changes, values match POL-001 |
+| LLM summary in Agents 1–2 | Deferred until all P1 tests pass; may rewrite `summary` only | Template text is enough for the demo |
 | Orchestration | Plain sequential Python first; LangGraph only if time allows | Fewer moving parts in 24 h; same state shape either way |
 | Detection | Deterministic rules; LLM only explains | Repeatable, testable, can't be talked into a verdict |
-| Severity | Deterministic rubric (POL-004 §1) | LLM may not raise or lower severity |
+| Severity | Deterministic rubric (POL-004 §1): privileged account + (2+ assets **or** a high/critical asset) + unauthorized/expired access → `high`; `critical` only with evidence of changes or data transfer | LLM may not raise or lower severity |
 | Embeddings | `all-MiniLM-L6-v2`, local | Small, CPU-friendly |
 | Chunking | One chunk per `##` section of each doc | Docs are short; sections map to citable references |
 | Recipients | Active **owners** only; team channel if none; backups not notified | Minimum disclosure (POL-004 §2) |
