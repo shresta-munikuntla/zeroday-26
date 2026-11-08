@@ -150,13 +150,20 @@ npm run dev
 
 Open `http://localhost:5173` and sign in with `reviewer` or `viewer` plus the corresponding password from `.env`. Reviewers can approve/reject and send; viewers can read the incident. The demo data and mock destination are fictional. Run `python -m pytest` from the repository root to execute the backend acceptance tests.
 
-### Regenerate only the synthetic dataset
+### Data and agents (P1)
+
+No `.env` or API keys needed. From the repository root, with the virtual environment active (Windows: `.venv\Scripts\Activate.ps1`):
 
 ```bash
-git clone https://github.com/shresta-munikuntla/zeroday-26.git
-cd zeroday-26
-python -I data/scripts/generate_seed.py      # rebuilds data/seed/ (deterministic)
+python -m backend.database.seed                 # build sentinelai.db from data/seed/ (deletes the old one)
+python -m backend.agents.threat_detection       # Agent 1: print detected incidents
+python -m backend.agents.investigation          # Agent 1 + Agent 2: print the investigation
+python -m pytest                                # run all tests
+
+python -I data/scripts/generate_seed.py         # (only if you change the dataset) regenerate data/seed/
 ```
+
+Fixtures for teammates (the real Agent 1 / Agent 2 output for INC-001) live in `backend/tests/fixtures/`.
 
 Configuration stays in a local `.env` (copied from `.env.example`) — **never commit real keys or passwords**.
 

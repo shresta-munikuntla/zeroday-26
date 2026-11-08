@@ -53,7 +53,7 @@ Agents never write SQL. They call fixed functions (spec §3.3), e.g. `get_accoun
 
 | Agent | May read | May write |
 |---|---|---|
-| 1 Detection | logs, accounts, approved networks, maintenance windows | — |
+| 1 Detection | logs, accounts, permissions (validity check for rule R2), asset criticality, approved networks, maintenance windows | — |
 | 2 Investigation | logs, permissions, assets | — |
 | 3 Intelligence | investigation output, ChromaDB | — |
 | 4 Orchestrator | all agent outputs | incidents, audit events |

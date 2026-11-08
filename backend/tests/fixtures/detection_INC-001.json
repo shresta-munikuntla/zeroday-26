@@ -1,0 +1,46 @@
+[
+  {
+    "incident_id": "INC-001",
+    "detection_status": "suspicious",
+    "summary": "Admin account admin_04 logged in from unfamiliar IP 198.51.100.24 and accessed or attempted 3 asset(s) within 8 minutes.",
+    "severity_initial": "high",
+    "account_ids": [
+      "admin_04"
+    ],
+    "source_ip_addresses": [
+      "198.51.100.24"
+    ],
+    "affected_asset_ids": [
+      "DC-SRV-04",
+      "DC-SRV-05",
+      "DC-DB-01"
+    ],
+    "time_window": {
+      "start": "2026-11-07T09:10:00Z",
+      "end": "2026-11-07T09:18:00Z"
+    },
+    "evidence_ids": [
+      "LOG-101",
+      "LOG-102",
+      "LOG-103",
+      "LOG-104",
+      "LOG-105"
+    ],
+    "reasons": [
+      "Successful login from 198.51.100.24, which is not in admin_04's known-IP list and not inside any approved network (LOG-101)",
+      "Access to assets without a currently valid permission (LOG-103, LOG-104, LOG-105)",
+      "Access to 3 different assets within 15 minutes from an untrusted source (LOG-102, LOG-103, LOG-104, LOG-105)",
+      "Activity outside Mon-Fri 07:00-19:00 UTC (Saturday) (LOG-101, LOG-102, LOG-103, LOG-104, LOG-105)"
+    ],
+    "uncertainties": [
+      "The source IP may belong to an authorized but unregistered VPN or remote-access path.",
+      "Access alone is not proof of compromise; the account holder has not been contacted.",
+      "Off-hours activity may be unrecorded emergency maintenance."
+    ],
+    "rules_triggered": [
+      "R1_unfamiliar_ip_login",
+      "R2_access_without_valid_permission",
+      "R4_access_burst_untrusted_source"
+    ]
+  }
+]
