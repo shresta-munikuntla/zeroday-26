@@ -16,6 +16,7 @@ export async function login(username, password) {
 export async function getIncidents() { return (await api.get('/incidents')).data; }
 export async function getIncident(id) { return (await api.get(`/incidents/${id}`)).data; }
 export async function runDemo() { return (await api.post('/incidents/run-demo', {})).data; }
+export async function resetDemo() { return (await api.post('/incidents/reset-demo', {})).data; }
 export async function approve(id) { return (await api.post(`/incidents/${id}/approve`, { comment: '' })).data; }
 export async function reject(id) { return (await api.post(`/incidents/${id}/reject`, { comment: '' })).data; }
 export async function send(id, recipient_ids) { return (await api.post(`/incidents/${id}/send`, { recipient_ids })).data; }
