@@ -75,7 +75,7 @@ It also shows restraint: an admin logging in through the **approved VPN**, a use
 | LLM | **NVIDIA Nemotron** on **Brev**, via the OpenAI-compatible `openai` client | One shared model endpoint for all agents |
 | Orchestration | **LangGraph** (or plain sequential Python) | Ordered workflow with shared state |
 | Backend API | **FastAPI** + **Pydantic** + Uvicorn | Typed request validation, async |
-| Database | **SQLite** via **SQLAlchemy** | Zero-setup single source of truth |
+| Database | **SQLite** (Python's built-in `sqlite3`) | Zero-setup single source of truth, nothing to install |
 | RAG | **ChromaDB** + **sentence-transformers** (`all-MiniLM-L6-v2`) | Local vector search over policies and MITRE data |
 | Auth & security | **PyJWT**, **pwdlib[argon2]**, slowapi (rate limiting) | Login, role checks, hashed passwords |
 | Frontend | **React** + axios + react-router | Incident dashboard and approval screen |
