@@ -136,7 +136,21 @@ Edit `.env`: set a long random `JWT_SECRET_KEY` plus unique `DEMO_VIEWER_PASSWOR
 uvicorn backend.main:app --reload
 ```
 
-The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
+The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing. To deliver real iMessages through Photon, see **Photon iMessage (demo)** below.
+
+### Photon iMessage (demo)
+
+The seeded employees are fictional, so in `photon` mode each owner's alert goes to a **real demo iPhone mapped in `.env`** (`PHOTON_RECIPIENTS=EMP-001=+1...,EMP-003=+1...,EMP-006=+1...`). Employees not listed fall back to `PHOTON_DEMO_HANDLE`, if set. Each message starts with `[SentinelAI demo — alert for <name>, <role>]`. It uses Photon Beta's Free plan (no per-message fees for iMessage).
+
+1. Sign up at https://app.beta.photon.codes, then create an organization and a project. Copy the **Project ID** (`pho_prj_...`) from Settings.
+2. Open **API keys → New API key** with `project:read` and `project:write`. Copy it at once; it is shown only once.
+3. Open **iMessage**. For **each demo phone**, enter its number (the human sender, not a number for the agent), select **Add**, then **Assign a number from the shared pool**. Note the Photon number it is given.
+4. From each demo iPhone, send a new iMessage (blue bubble, not SMS) to that Photon number, e.g. `ping`. Photon's shared lines can only message someone who has texted them since the assignment.
+5. Add to `.env`: `NOTIFICATION_MODE=photon`, `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, and `PHOTON_RECIPIENTS` (numbers with `+` and country code). Never commit real numbers.
+6. Check the setup: `python -m backend.notifications.photon check`, which lists each phone as READY or NOT READY; `python -m backend.notifications.photon test` sends a test iMessage to each ready phone.
+7. Restart the backend. In the dashboard, **Run demo → Approve → Send** delivers each owner's alert to their demo phone.
+
+A "sent" status means Photon accepted the message; the API does not confirm it reached the phone. Keep `NOTIFICATION_MODE=mock` as the offline fallback.
 
 ### Frontend
 

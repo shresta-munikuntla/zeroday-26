@@ -26,6 +26,7 @@ import {
   getIncidents,
   previewIntelligence,
   reject,
+  resetDemo,
   runDemo,
   send,
 } from "./api.js";
@@ -162,6 +163,28 @@ export default function App() {
           "The demo could not finish. No successful workflow has been assumed.",
         ),
       );
+    } finally {
+      setOperation("");
+    }
+  }
+  async function doReset() {
+    if (
+      !window.confirm(
+        "Reset the demo? This clears the current incident and its drafts (the audit history is kept) and creates fresh drafts awaiting approval.",
+      )
+    )
+      return;
+    setOperation("reset");
+    setError("");
+    setNotice("");
+    try {
+      const result = await resetDemo();
+      detailCache.current = {};
+      await refresh(result.incident_id);
+      setStageId("detect");
+      setNotice("Demo reset. Fresh drafts are ready for review.");
+    } catch (e) {
+      setError(apiMessage(e, "The demo could not be reset."));
     } finally {
       setOperation("");
     }
@@ -318,6 +341,16 @@ export default function App() {
           >
             Run Demo
           </Button>
+          {reviewer && (
+            <Button
+              busy={operation === "reset"}
+              disabled={busy || loading || generating || checking}
+              onClick={doReset}
+              title="Clear the demo incident and drafts so the flow can be run again"
+            >
+              Reset Demo
+            </Button>
+          )}
           <div className="role-chip">
             <span>{user.username?.slice(0, 1).toUpperCase()}</span>
             <div>

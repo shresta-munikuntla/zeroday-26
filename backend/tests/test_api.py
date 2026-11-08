@@ -49,7 +49,7 @@ def test_adapter_errors_are_saved_as_failed_and_visible(client, auth_headers, mo
     import backend.api.routes_notifications as notification_routes
 
     class BrokenAdapter:
-        def send(self, channel, subject, body):
+        def send(self, channel, subject, body, **kwargs):
             raise RuntimeError("provider unavailable")
 
     client.post("/api/incidents/INC-001/approve", json={}, headers=auth_headers)

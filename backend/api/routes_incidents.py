@@ -62,6 +62,25 @@ def run_demo(payload: DemoRequest, user: Viewer):
             'approval_status': incident['approval_status'], 'errors': state['errors']}
 
 
+@router.post("/reset-demo")
+def reset_demo(payload: DemoRequest, user: Reviewer):
+    """Clear demo incidents and drafts, then rerun the demo so fresh drafts await approval.
+
+    The audit trail is kept (and records the reset); a delivery in progress blocks the reset.
+    """
+    if rows("SELECT 1 FROM notifications WHERE status='sending' LIMIT 1"):
+        raise HTTPException(409, "A delivery is in progress; try again once it finishes")
+    previous = rows("SELECT incident_id, status, approval_status FROM incidents ORDER BY incident_id")
+    for incident in previous:
+        write_audit_event(incident["incident_id"], user["user_id"], "demo_reset",
+                          {"previous_status": incident["status"],
+                           "previous_approval_status": incident["approval_status"]})
+    with connect() as db:
+        db.execute("DELETE FROM notifications")
+        db.execute("DELETE FROM incidents")
+    return run_demo(payload, user)
+
+
 @router.get("")
 def list_incidents(user: Viewer):
     return [{k: x[k] for k in ("incident_id", "severity", "status", "approval_status", "summary")} for x in rows(
