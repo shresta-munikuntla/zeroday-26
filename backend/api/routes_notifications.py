@@ -61,10 +61,20 @@ def send(incident_id: str, payload: SendRequest, user: Reviewer):
                 raise HTTPException(409, f"Delivery is already in progress for {draft['recipient_id']}")
         db.commit()
     results = []
+    try:  # one adapter per request so Photon looks up the conversation once
+        adapter, adapter_error = get_adapter(), None
+    except Exception as exc:  # bad mode/config still releases every claimed row as failed
+        adapter, adapter_error = None, str(exc)
     for draft in targets:
         assets = json.loads(draft["asset_ids_json"])
+        person = rows("SELECT display_name, role FROM employees WHERE employee_id=?", (draft["recipient_id"],))
+        label = f"{person[0]['display_name']}, {person[0]['role']}" if person else draft["recipient_id"]
         try:
-            result = get_adapter().send(draft["recipient_channel"], draft["subject"], draft["body"])
+            if adapter is None:
+                raise RuntimeError(adapter_error)
+            result = adapter.send(draft["recipient_channel"], draft["subject"], draft["body"],
+                                  recipient_label=label, idempotency_key=f"sentinelai:{draft['notification_id']}",
+                                  recipient_id=draft["recipient_id"])
         except Exception as exc:  # delivery errors are visible and persisted
             result = {"status": "failed", "detail": str(exc)}
         state = result.get("status") if result.get("status") in ("sent", "mocked") else "failed"
