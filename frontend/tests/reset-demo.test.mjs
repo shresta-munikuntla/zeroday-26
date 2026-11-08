@@ -4,17 +4,23 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 
-// The Reset demo button is shown only when App passes a handler (reviewers only).
-test('sidebar shows Reset demo only for reviewers', async () => {
+// Reset Demo sits next to Run Demo in the toolbar and is shown only to reviewers.
+test('toolbar shows Reset Demo only for reviewers', async () => {
   const server = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
+  const store = {};
+  globalThis.sessionStorage = { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); }, clear() {} };
   try {
-    const { default: IncidentList } = await server.ssrLoadModule('/src/IncidentList.jsx');
-    const render = onResetDemo => renderToStaticMarkup(React.createElement(IncidentList, {
-      incidents: [], selected: '', onSelect() {}, onRunDemo() {}, onResetDemo, busy: false,
-    }));
-    assert.match(render(() => {}), /Reset demo/);
-    assert.doesNotMatch(render(null), /Reset demo/);
+    const { default: App } = await server.ssrLoadModule('/src/App.jsx');
+    const renderAs = role => {
+      store.sentinel_user = JSON.stringify({ username: role, role });
+      return renderToStaticMarkup(React.createElement(App));
+    };
+    const reviewer = renderAs('reviewer');
+    assert.match(reviewer, /Run Demo/);
+    assert.match(reviewer, /Reset Demo/);
+    assert.doesNotMatch(renderAs('viewer'), /Reset Demo/);
   } finally {
+    delete globalThis.sessionStorage;
     await server.close();
   }
 });
