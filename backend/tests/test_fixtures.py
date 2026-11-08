@@ -5,7 +5,7 @@ If this fails after you change an agent, regenerate them:
 """
 import json
 
-from conftest import FIXTURES
+from .conftest import FIXTURES
 
 
 def _load(name):

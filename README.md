@@ -4,7 +4,7 @@
 
 SentinelAI reads security logs, spots suspicious activity, works out what it might affect, looks up relevant security guidance, and drafts a clear alert for **the specific person responsible** for the affected servers. A human approves the alert before it is sent. Nothing is ever changed on infrastructure automatically.
 
-> **Status:** early build. The synthetic dataset and knowledge base are in place (`data/`). Backend, agents, and dashboard are tracked as GitHub Issues.
+> **Status:** early build. The synthetic dataset, a fixture-backed API and owner-notification workflow, and a reviewer dashboard are available. The intelligence workflow is currently a synthetic demo result; integrations with the P1/P2 components can replace the fixture path as they land.
 
 ---
 
@@ -94,8 +94,8 @@ zeroday-26/
 │   ├── knowledge/                RAG documents: MITRE subset, policies, past incidents, injection test doc
 │   ├── scripts/                  generate_seed.py, extract_mitre.py
 │   └── README.md                 what each file is for and why it exists
-├── backend/                      🚧 planned — FastAPI app, agents, workflow, RAG, notifications, auth
-├── frontend/                     🚧 planned — React dashboard
+├── backend/                      FastAPI API, Agent 5, SQLite fixtures, reviewer auth, mock notifications
+├── frontend/                     React incident review dashboard
 └── docs/
     ├── architecture.md           ✅ architecture, system design, workflow, team breakdown, key decisions
     └── datasets.md               ✅ how the datasets were built and why
@@ -119,12 +119,42 @@ IPs come from reserved documentation ranges (RFC 5737), so no real address appea
 
 ## Getting started
 
-```bash
-git clone https://github.com/shresta-munikuntla/zeroday-26.git
-cd zeroday-26
-python -m venv .venv && .venv\Scripts\Activate.ps1   # Windows; macOS/Linux: source .venv/bin/activate
-pip install pytest
+### Backend
 
+Requirements: Python 3.11+.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Edit `.env`: set a long random `JWT_SECRET_KEY` plus unique `DEMO_VIEWER_PASSWORD` and `DEMO_REVIEWER_PASSWORD` values. The passwords are Argon2-hashed at startup. Then run:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup the backend seeds a local SQLite database from `data/seed/`. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
+
+### Frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` and sign in with `reviewer` or `viewer` plus the corresponding password from `.env`. Reviewers can approve/reject and send; viewers can read the incident. The demo data and mock destination are fictional. Run `python -m pytest` from the repository root to execute the backend acceptance tests.
+
+### Data and agents (P1)
+
+No `.env` or API keys needed. From the repository root, with the virtual environment active (Windows: `.venv\Scripts\Activate.ps1`):
+
+```bash
 python -m backend.database.seed                 # build sentinelai.db from data/seed/ (deletes the old one)
 python -m backend.agents.threat_detection       # Agent 1: print detected incidents
 python -m backend.agents.investigation          # Agent 1 + Agent 2: print the investigation
@@ -135,7 +165,7 @@ python -I data/scripts/generate_seed.py         # (only if you change the datase
 
 Fixtures for teammates (the real Agent 1 / Agent 2 output for INC-001) live in `backend/tests/fixtures/`.
 
-API, RAG, and frontend setup instructions will be added here as those components land. Configuration will live in a local `.env` (copied from `.env.example`) — **never commit real keys**.
+Configuration stays in a local `.env` (copied from `.env.example`) — **never commit real keys or passwords**.
 
 ## Team and ownership
 

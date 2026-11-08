@@ -1,0 +1,7 @@
+import React from 'react';
+
+const statusLabels = { awaiting_approval: 'Needs review', approved: 'Approved', rejected: 'Rejected', notified: 'Delivered' };
+
+export default function IncidentList({ incidents, selected, onSelect, onRunDemo, busy }) {
+  return <aside className="sidebar"><div className="sidebar-top"><div><div className="eyebrow">WORKSPACE</div><div className="workspace-name">Security operations <span className="chevron">⌄</span></div></div><span className="workspace-avatar">SO</span></div><div className="nav-label">INVESTIGATIONS <span>{incidents.length}</span></div><div className="incident-menu">{incidents.map(item => <button key={item.incident_id} className={`incident-nav ${selected === item.incident_id ? 'selected' : ''}`} onClick={() => onSelect(item.incident_id)}><span className="severity-mini"/><span className="nav-copy"><strong>{item.incident_id}</strong><small>{item.summary}</small></span><span className={`nav-status ${item.approval_status === 'pending' ? 'pending' : ''}`}>{statusLabels[item.status] || item.status}</span></button>)}</div><button className="button run-button" onClick={onRunDemo} disabled={busy}><span className="play-icon">▶</span>{busy ? 'Running demo…' : 'Run demo scenario'}<span className="shortcut">⌘ ↵</span></button><div className="sidebar-bottom"><div className="tiny-shield">✓</div><div><strong>Human reviewed</strong><small>No alert sends without approval</small></div></div></aside>;
+}
