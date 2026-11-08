@@ -1,0 +1,633 @@
+{
+  "ai_generation": {
+    "mode": "fallback",
+    "model": null
+  },
+  "incident_id": "INC-001",
+  "status": "awaiting_approval",
+  "severity": "high",
+  "evidence_ids": [
+    "LOG-101",
+    "LOG-102",
+    "LOG-103",
+    "LOG-104",
+    "LOG-105",
+    "PERM-001",
+    "PERM-003"
+  ],
+  "affected_asset_ids": [
+    "DC-SRV-04",
+    "DC-SRV-05",
+    "DC-DB-01"
+  ],
+  "detection": {
+    "incident_id": "INC-001",
+    "evidence_ids": [
+      "LOG-101",
+      "LOG-102",
+      "LOG-103",
+      "LOG-104",
+      "LOG-105"
+    ],
+    "reasons": [
+      "Successful login from 198.51.100.24, which is not in admin_04's known-IP list and not inside any approved network (LOG-101)",
+      "Access to assets without a currently valid permission (LOG-103, LOG-104, LOG-105)",
+      "Access to 3 different assets within 15 minutes from an untrusted source (LOG-102, LOG-103, LOG-104, LOG-105)",
+      "Activity outside Mon-Fri 07:00-19:00 UTC (Saturday) (LOG-101, LOG-102, LOG-103, LOG-104, LOG-105)"
+    ],
+    "detection_status": "suspicious",
+    "summary": "Admin account admin_04 logged in from unfamiliar IP 198.51.100.24 and accessed or attempted 3 asset(s) within 8 minutes.",
+    "severity_initial": "high",
+    "account_ids": [
+      "admin_04"
+    ],
+    "source_ip_addresses": [
+      "198.51.100.24"
+    ],
+    "affected_asset_ids": [
+      "DC-SRV-04",
+      "DC-SRV-05",
+      "DC-DB-01"
+    ],
+    "time_window": {
+      "start": "2026-11-07T09:10:00Z",
+      "end": "2026-11-07T09:18:00Z"
+    },
+    "uncertainties": [
+      "The source IP may belong to an authorized but unregistered VPN or remote-access path.",
+      "Access alone is not proof of compromise; the account holder has not been contacted.",
+      "Off-hours activity may be unrecorded emergency maintenance."
+    ],
+    "rules_triggered": [
+      "R1_unfamiliar_ip_login",
+      "R2_access_without_valid_permission",
+      "R4_access_burst_untrusted_source"
+    ]
+  },
+  "investigation": {
+    "status": "potential_unauthorized_access",
+    "confirmed_facts": [
+      "admin_04 logged in from 198.51.100.24, which is not in its known-IP list and not inside any approved network (LOG-101).",
+      "admin_04 accessed DC-SRV-04 under valid permission PERM-001 (LOG-102).",
+      "admin_04 accessed DC-SRV-05 although PERM-003 expired on 2026-10-01 (LOG-103).",
+      "admin_04 made 2 denied attempt(s) to access DC-DB-01; no permission exists (LOG-104, LOG-105).",
+      "Activity occurred on Saturday outside Mon-Fri 07:00-19:00 UTC; admin_04 has no off-hours activity in the previous 7 days (9 events reviewed)."
+    ],
+    "investigation_reasons": [
+      "Admin account admin_04 logged in from unfamiliar IP 198.51.100.24 and accessed or attempted 3 asset(s) within 8 minutes.",
+      "Successful login from 198.51.100.24, which is not in admin_04's known-IP list and not inside any approved network (LOG-101)",
+      "Access to assets without a currently valid permission (LOG-103, LOG-104, LOG-105)",
+      "Access to 3 different assets within 15 minutes from an untrusted source (LOG-102, LOG-103, LOG-104, LOG-105)",
+      "Activity outside Mon-Fri 07:00-19:00 UTC (Saturday) (LOG-101, LOG-102, LOG-103, LOG-104, LOG-105)"
+    ],
+    "incident_id": "INC-001",
+    "evidence_ids": [
+      "LOG-101",
+      "LOG-102",
+      "LOG-103",
+      "LOG-104",
+      "LOG-105",
+      "PERM-001",
+      "PERM-003"
+    ],
+    "permission_ids": [
+      "PERM-001",
+      "PERM-003"
+    ],
+    "affected_asset_ids": [
+      "DC-SRV-04",
+      "DC-SRV-05",
+      "DC-DB-01"
+    ],
+    "severity": "high",
+    "investigation_status": "potential_unauthorized_access",
+    "timeline": [
+      {
+        "timestamp": "2026-11-07T09:10:00Z",
+        "description": "admin_04 logged in from 198.51.100.24 (IP not in known-IP list or any approved network).",
+        "evidence_ids": [
+          "LOG-101"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:12:00Z",
+        "description": "admin_04 accessed DC-SRV-04 (jump-host-01); permitted by PERM-001.",
+        "evidence_ids": [
+          "LOG-102",
+          "PERM-001"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:14:00Z",
+        "description": "admin_04 accessed DC-SRV-05 (identity-sync-01); PERM-003 expired 2026-10-01.",
+        "evidence_ids": [
+          "LOG-103",
+          "PERM-003"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:16:00Z",
+        "description": "admin_04 attempted to access DC-DB-01 (customer-db-primary) - failure; no permission on record.",
+        "evidence_ids": [
+          "LOG-104"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:18:00Z",
+        "description": "admin_04 attempted to access DC-DB-01 (customer-db-primary) - failure; no permission on record.",
+        "evidence_ids": [
+          "LOG-105"
+        ]
+      }
+    ],
+    "affected_assets": [
+      {
+        "asset_id": "DC-SRV-04",
+        "asset_name": "jump-host-01",
+        "criticality": "high",
+        "owner_team": "Network Security",
+        "authorization": "authorized",
+        "permission_id": "PERM-001",
+        "successful_access_ids": [
+          "LOG-102"
+        ],
+        "denied_access_ids": []
+      },
+      {
+        "asset_id": "DC-SRV-05",
+        "asset_name": "identity-sync-01",
+        "criticality": "high",
+        "owner_team": "Identity Security",
+        "authorization": "expired",
+        "permission_id": "PERM-003",
+        "successful_access_ids": [
+          "LOG-103"
+        ],
+        "denied_access_ids": []
+      },
+      {
+        "asset_id": "DC-DB-01",
+        "asset_name": "customer-db-primary",
+        "criticality": "critical",
+        "owner_team": "Database Administration",
+        "authorization": "none",
+        "permission_id": null,
+        "successful_access_ids": [],
+        "denied_access_ids": [
+          "LOG-104",
+          "LOG-105"
+        ]
+      }
+    ],
+    "potential_impact": "Access without a valid permission may expose services hosted on DC-SRV-05 (identity-sync-01, high). Denied attempts targeted DC-DB-01 (customer-db-primary, critical); no successful access was recorded. No permission changes or data-transfer events were found in the logs.",
+    "hypotheses": [
+      "The admin_04 credentials may be in use by someone other than the account holder.",
+      "Credentials on DC-SRV-05 may not have been revoked when PERM-003 expired.",
+      "The denied attempts on DC-DB-01 may indicate an attempt to reach a critical asset."
+    ],
+    "benign_explanations_to_check": [
+      "The source IP may be a new or unregistered VPN / remote-access address (verify with Network Security).",
+      "The activity may be unrecorded emergency maintenance (verify with the admin_04 account holder).",
+      "Access to DC-SRV-05 may have been informally extended after PERM-003 expired."
+    ],
+    "checks_performed": [
+      "Source IP(s) 198.51.100.24 checked against approved networks: no match.",
+      "Maintenance windows checked: none cover this activity.",
+      "Event types ['network_connection', 'permission_change'] checked in the window: none found."
+    ],
+    "confidence": 0.9
+  },
+  "intelligence": {
+    "matched_techniques": [
+      {
+        "technique_id": "T1078",
+        "name": "T1078 Valid Accounts",
+        "relevance": "Retrieved guidance; applicability requires analyst review.",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      },
+      {
+        "technique_id": "T1110",
+        "name": "T1110 Brute Force",
+        "relevance": "Retrieved guidance; applicability requires analyst review.",
+        "source_document_ids": [
+          "MITRE-T1110"
+        ]
+      },
+      {
+        "technique_id": "T1078",
+        "name": "T1078 Valid Accounts",
+        "relevance": "Retrieved guidance; applicability requires analyst review.",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      }
+    ],
+    "policy_references": [
+      {
+        "policy_id": "POL-001",
+        "section": "2. Account Monitoring",
+        "summary": "Privileged account activity must be reviewed when unexpected access is detected. Unexpected access includes:\n\n- A successful login from an IP address that is neither on the account's registered known-IP list nor inside an approved network listed in POL-002.\n- Access to three or more distinct assets within 15 minutes from a non-approved source.\n- Privileged activity outside the account's normal working pattern (for example, weekend activity for an account that normally operates on weekdays).",
+        "source_document_ids": [
+          "POL-001"
+        ]
+      },
+      {
+        "policy_id": "POL-003",
+        "section": "1. Least Privilege",
+        "summary": "Accounts may access only the assets listed in their current, unexpired permission records. Access to an asset without a current permission record is unauthorized, even if the target system allowed the connection.",
+        "source_document_ids": [
+          "POL-003"
+        ]
+      },
+      {
+        "policy_id": "POL-003",
+        "section": "3. Critical Assets",
+        "summary": "Access attempts against **critical** assets (for example, production databases) by accounts without permission must be reported to the asset owner, whether or not the attempt succeeded.",
+        "source_document_ids": [
+          "POL-003"
+        ]
+      }
+    ],
+    "historical_cases": [
+      {
+        "case_id": "CASE-003",
+        "summary": "Several employee accounts received more than ten failed login attempts each within a few minutes from one external IP. No attempt succeeded.",
+        "relevance": "Historical context only; not evidence about this investigation.",
+        "source_document_ids": [
+          "CASE-003"
+        ]
+      },
+      {
+        "case_id": "CASE-002",
+        "summary": "A privileged account logged in from an external IP outside the approved VPN, then accessed several servers within minutes. One server accepted the connection even though the account's permission had expired, because the SSH key had not been removed. Attempts against a database were denied.",
+        "relevance": "Historical context only; not evidence about this investigation.",
+        "source_document_ids": [
+          "CASE-002"
+        ]
+      }
+    ],
+    "recommended_actions": [
+      {
+        "action": "Review MITRE-T1078, section Description, for applicable guidance.",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      },
+      {
+        "action": "Review MITRE-T1110, section Mitigations, for applicable guidance.",
+        "source_document_ids": [
+          "MITRE-T1110"
+        ]
+      },
+      {
+        "action": "Review MITRE-T1078, section Mitigations, for applicable guidance.",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      },
+      {
+        "action": "Review POL-001, section 2. Account Monitoring, for applicable guidance.",
+        "source_document_ids": [
+          "POL-001"
+        ]
+      },
+      {
+        "action": "Review POL-003, section 1. Least Privilege, for applicable guidance.",
+        "source_document_ids": [
+          "POL-003"
+        ]
+      },
+      {
+        "action": "Review POL-003, section 3. Critical Assets, for applicable guidance.",
+        "source_document_ids": [
+          "POL-003"
+        ]
+      },
+      {
+        "action": "Review CASE-003, section Summary, for applicable guidance.",
+        "source_document_ids": [
+          "CASE-003"
+        ]
+      },
+      {
+        "action": "Review CASE-002, section Summary, for applicable guidance.",
+        "source_document_ids": [
+          "CASE-002"
+        ]
+      }
+    ],
+    "recommended_resources": [
+      {
+        "title": "T1078 Valid Accounts",
+        "url": "https://attack.mitre.org/techniques/T1078",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      },
+      {
+        "title": "T1110 Brute Force",
+        "url": "https://attack.mitre.org/techniques/T1110",
+        "source_document_ids": [
+          "MITRE-T1110"
+        ]
+      },
+      {
+        "title": "T1078 Valid Accounts",
+        "url": "https://attack.mitre.org/techniques/T1078",
+        "source_document_ids": [
+          "MITRE-T1078"
+        ]
+      }
+    ],
+    "limitations": [
+      "AI summary unavailable; showing retrieved sources only."
+    ]
+  },
+  "approval_status": "pending",
+  "audit": [
+    {
+      "event_id": 1,
+      "incident_id": "INC-001",
+      "actor_id": "agent1",
+      "action": "detection",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\"]}",
+      "created_at": "2026-11-08 14:12:21",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105"
+        ]
+      }
+    },
+    {
+      "event_id": 2,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"detection\", \"status\": \"passed\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\"]}",
+      "created_at": "2026-11-08 14:12:21",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "detection",
+        "status": "passed",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105"
+        ]
+      }
+    },
+    {
+      "event_id": 3,
+      "incident_id": "INC-001",
+      "actor_id": "agent2",
+      "action": "investigation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\", \"PERM-001\", \"PERM-003\"], \"severity\": \"high\"}",
+      "created_at": "2026-11-08 14:12:21",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105",
+          "PERM-001",
+          "PERM-003"
+        ],
+        "severity": "high"
+      }
+    },
+    {
+      "event_id": 4,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"investigation\", \"status\": \"passed\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\", \"PERM-001\", \"PERM-003\"]}",
+      "created_at": "2026-11-08 14:12:21",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "investigation",
+        "status": "passed",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105",
+          "PERM-001",
+          "PERM-003"
+        ]
+      }
+    },
+    {
+      "event_id": 5,
+      "incident_id": "INC-001",
+      "actor_id": "agent3",
+      "action": "intelligence_validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"model_output\", \"status\": \"llm_unavailable\"}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "model_output",
+        "status": "llm_unavailable"
+      }
+    },
+    {
+      "event_id": 6,
+      "incident_id": "INC-001",
+      "actor_id": "agent3",
+      "action": "retrieval",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"document_ids\": [\"CASE-002\", \"CASE-003\", \"MITRE-T1078\", \"MITRE-T1110\", \"POL-001\", \"POL-003\"]}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "document_ids": [
+          "CASE-002",
+          "CASE-003",
+          "MITRE-T1078",
+          "MITRE-T1110",
+          "POL-001",
+          "POL-003"
+        ]
+      }
+    },
+    {
+      "event_id": 7,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"intelligence\", \"status\": \"passed\", \"document_ids\": [\"CASE-002\", \"CASE-003\", \"MITRE-T1078\", \"MITRE-T1110\", \"POL-001\", \"POL-003\"]}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "intelligence",
+        "status": "passed",
+        "document_ids": [
+          "CASE-002",
+          "CASE-003",
+          "MITRE-T1078",
+          "MITRE-T1110",
+          "POL-001",
+          "POL-003"
+        ]
+      }
+    },
+    {
+      "event_id": 8,
+      "incident_id": "INC-001",
+      "actor_id": "agent3",
+      "action": "intelligence",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"document_ids\": [\"CASE-002\", \"CASE-003\", \"MITRE-T1078\", \"MITRE-T1110\", \"POL-001\", \"POL-003\"]}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "document_ids": [
+          "CASE-002",
+          "CASE-003",
+          "MITRE-T1078",
+          "MITRE-T1110",
+          "POL-001",
+          "POL-003"
+        ]
+      }
+    },
+    {
+      "event_id": 9,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"final_report\", \"status\": \"passed\"}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "final_report",
+        "status": "passed"
+      }
+    },
+    {
+      "event_id": 10,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "report_generation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"severity\": \"high\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\", \"PERM-001\", \"PERM-003\"]}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "severity": "high",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105",
+          "PERM-001",
+          "PERM-003"
+        ]
+      }
+    },
+    {
+      "event_id": 11,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "validation",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"step\": \"notification_drafting\", \"status\": \"passed\"}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "step": "notification_drafting",
+        "status": "passed"
+      }
+    },
+    {
+      "event_id": 12,
+      "incident_id": "INC-001",
+      "actor_id": "agent5",
+      "action": "notification_drafting",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"recipient_ids\": [\"EMP-001\", \"EMP-003\", \"EMP-006\"], \"asset_ids\": [\"DC-SRV-04\", \"DC-SRV-05\", \"DC-DB-01\"]}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "recipient_ids": [
+          "EMP-001",
+          "EMP-003",
+          "EMP-006"
+        ],
+        "asset_ids": [
+          "DC-SRV-04",
+          "DC-SRV-05",
+          "DC-DB-01"
+        ]
+      }
+    },
+    {
+      "event_id": 13,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "final_status",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"status\": \"awaiting_approval\"}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "status": "awaiting_approval"
+      }
+    },
+    {
+      "event_id": 14,
+      "incident_id": "INC-001",
+      "actor_id": "orchestrator",
+      "action": "incident_reused",
+      "detail_json": "{\"actor_type\": \"agent\", \"resource_type\": \"incident\", \"resource_id\": \"INC-001\", \"evidence_ids\": [\"LOG-101\", \"LOG-102\", \"LOG-103\", \"LOG-104\", \"LOG-105\"], \"reused\": true}",
+      "created_at": "2026-11-08 14:12:24",
+      "details": {
+        "actor_type": "agent",
+        "resource_type": "incident",
+        "resource_id": "INC-001",
+        "evidence_ids": [
+          "LOG-101",
+          "LOG-102",
+          "LOG-103",
+          "LOG-104",
+          "LOG-105"
+        ],
+        "reused": true
+      }
+    }
+  ],
+  "recipients": [],
+  "_fixture_notice": "Test-only captured real-agent output over synthetic seed data; never loaded by production frontend."
+}

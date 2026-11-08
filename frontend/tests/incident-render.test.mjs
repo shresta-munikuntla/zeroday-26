@@ -7,7 +7,7 @@ import { createServer } from 'vite';
 // Load the actual JSX with Vite, then render the API's structured intelligence.
 // This catches React's "Objects are not valid as a React child" regression.
 test('incident renders structured Agent 3 guidance and legacy text', async () => {
-  const server = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
+  const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
     const { default: IncidentDetail } = await server.ssrLoadModule('/src/IncidentDetail.jsx');
     const incident = {
@@ -31,7 +31,7 @@ test('incident renders structured Agent 3 guidance and legacy text', async () =>
 
 
 test('workflow explorer separates saved provenance from a live connection check', async () => {
-  const server = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
+  const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' });
   try {
     const { default: DemoPanel } = await server.ssrLoadModule('/src/DemoPanel.jsx');
     const render = incident => renderToStaticMarkup(React.createElement(DemoPanel, { incident, user: { role: 'reviewer' } }));

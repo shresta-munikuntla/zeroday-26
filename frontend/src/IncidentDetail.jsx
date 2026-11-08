@@ -12,7 +12,7 @@ function formatWindow(window = {}) {
   return `${date} · ${time(start)}–${time(end)} UTC`;
 }
 
-export default function IncidentDetail({ incident, user, onApprove, onReject, onSend, busy, notify, onRefresh }) {
+export default function IncidentDetail({ incident, user, onApprove, onReject, onSend, busy, onRefresh }) {
   if (!incident) return <div className="empty-state">Select an investigation to review.</div>;
   const reviewer = user?.role === 'reviewer';
   const pending = incident.approval_status === 'pending';
