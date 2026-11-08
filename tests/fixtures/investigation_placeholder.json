@@ -1,0 +1,10 @@
+{
+  "_placeholder": "P2 test fixture only; replace with P1 Agent 2 contract when available.",
+  "status": "suspicious",
+  "confirmed_facts": [
+    {"event_ids": ["LOG-101", "LOG-102", "LOG-103", "LOG-104", "LOG-105"], "fact": "Privileged account activity from an external IP involved multiple assets; access succeeded after one permission expired and database attempts were denied."}
+  ],
+  "investigation_reasons": [
+    "Review expired SSH permission enforcement and remote access policy."
+  ]
+}

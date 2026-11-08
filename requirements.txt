@@ -1,0 +1,9 @@
+# PROVISIONAL P2 development dependencies, not the unavailable specification §8.
+# Versions below were installed and exercised locally. Reconcile with §8 before
+# integration; this file does not prescribe dependencies for P1/P3 components.
+openai==3.46.0
+python-dotenv==1.2.4
+chromadb==1.5.9
+sentence-transformers==6.2.0
+pydantic==2.14.3
+pytest==9.2.0

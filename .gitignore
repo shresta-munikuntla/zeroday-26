@@ -1,4 +1,7 @@
 # Byte-compiled / optimized / DLL files
+# macOS Finder metadata (ignore at every directory level)
+.DS_Store
+
 __pycache__/
 *.py[codz]
 *$py.class
