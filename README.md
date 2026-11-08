@@ -136,7 +136,9 @@ Edit `.env`: set a long random `JWT_SECRET_KEY` plus unique `DEMO_VIEWER_PASSWOR
 uvicorn backend.main:app --reload
 ```
 
-The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing. Photon remains a placeholder until its product/API and credentials are confirmed.
+The API listens on `http://localhost:8000`; `GET /api/health` is public. On first startup, the backend initializes the review database and seeds the Agent 1/2 SQLite database from `data/seed/` if it is missing. **Run demo** executes Agent 1 detection, passes each detection to Agent 2, then gives their structured outputs to Agent 5 for owner-specific drafts. The default notification mode is `mock`, which records a delivery result but sends nothing.
+
+To use Photon 2.0 Beta, set `NOTIFICATION_MODE=photon` in `.env` and configure `PHOTON_API_KEY`, `PHOTON_PROJECT_ID`, `PHOTON_AGENT_USER_ID`, and `PHOTON_CHANNEL_MAP`. Use the project-scoped Photon key. `PHOTON_CHANNEL_MAP` is a JSON object mapping each internal employee channel (such as `mock:avery.chen`) to a Photon platform and address. Add only intended recipient addresses; this map can contain personal contact information and must stay in the ignored local `.env`. Photon acceptance is asynchronous, so an accepted request is not the same as confirmed delivery.
 
 ### Frontend
 

@@ -57,6 +57,10 @@ def initialize() -> None:
                 actor_id TEXT NOT NULL, action TEXT NOT NULL, detail_json TEXT NOT NULL,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS photon_routes (
+                notification_channel TEXT PRIMARY KEY, platform TEXT NOT NULL, handle TEXT NOT NULL,
+                photon_user_id TEXT, photon_space_id TEXT
+            );
         """)
         if db.execute("SELECT COUNT(*) FROM employees").fetchone()[0] == 0:
             db.executemany("INSERT INTO employees VALUES (?, ?, ?, ?, ?, 1)", [
