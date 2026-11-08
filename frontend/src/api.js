@@ -23,3 +23,5 @@ export default api;
 
 export async function checkNemotron() { return (await api.post('/ai/check')).data; }
 export async function previewIntelligence(id) { return (await api.post(`/incidents/${id}/preview-intelligence`)).data; }
+
+export async function getHealth() { return (await api.get('/health', { timeout: 5000 })).data; }
