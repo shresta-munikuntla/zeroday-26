@@ -49,6 +49,21 @@ def parse_document(text: str) -> tuple[dict, list[dict]]:
         elif section is not None:
             body.append(line)
     flush()
+    # Keep original headings for citations, but disambiguate storage IDs. Reserve
+    # all literal section names first, including headings like "Summary [2]".
+    reserved = {c['section'] for c in chunks}
+    used = set()
+    for chunk in chunks:
+        section = chunk['section']
+        suffix = section
+        if section in used:
+            number = 2
+            while f'{section} [{number}]' in reserved | used:
+                number += 1
+            suffix = f'{section} [{number}]'
+        used.add(suffix)
+        if suffix != section:
+            chunk['chunk_id'] = f"{chunk['doc_id']}#{suffix}"
     return metadata, chunks
 
 
@@ -57,10 +72,12 @@ def read_chunks(root: Path, include_test_fixtures: bool = False):
     seen = set()
     folders = DIRECTORIES + (('test_fixtures',) if include_test_fixtures else ())
     for folder in folders:
-        for path in sorted((root / folder).glob('*.md')):
+        for path in sorted((root / folder).rglob('*.md')):
+            if not include_test_fixtures and 'test_fixtures' in path.relative_to(root).parts:
+                continue
             try:
                 _, sections = parse_document(path.read_text(encoding='utf-8'))
-                ids = [f"{c['doc_id']}#{c['section']}" for c in sections]
+                ids = [chunk_id(c) for c in sections]
                 if not sections or len(set(ids)) != len(ids) or seen.intersection(ids):
                     raise ValueError('Empty document or duplicate chunk IDs')
                 seen.update(ids)
@@ -71,15 +88,19 @@ def read_chunks(root: Path, include_test_fixtures: bool = False):
     return documents, chunks, errors
 
 
+def chunk_id(chunk):
+    return chunk.get('chunk_id', f"{chunk['doc_id']}#{chunk['section']}")
+
+
 def ingest(include_test_fixtures: bool = False):
     documents, chunks, errors = read_chunks(config.ROOT / 'data/knowledge', include_test_fixtures)
     model = vector_store.get_model(config.EMBEDDING_MODEL)
     embeddings = model.encode([c['text'] for c in chunks]).tolist() if chunks else []
     collection = vector_store.rebuild_collection()
     if chunks:
-        collection.add(ids=[f"{c['doc_id']}#{c['section']}" for c in chunks],
+        collection.add(ids=[chunk_id(c) for c in chunks],
                        documents=[c['text'] for c in chunks], embeddings=embeddings,
-                       metadatas=[{k: v for k, v in c.items() if k != 'text'} for c in chunks])
+                       metadatas=[{k: v for k, v in c.items() if k not in ('text', 'chunk_id')} for c in chunks])
     print(f'Documents processed: {documents}; chunks stored: {collection.count()}; skipped/errors: {len(errors)}')
     if not include_test_fixtures:
         print('Excluded test_fixtures/ (use --include-test-fixtures to include).')

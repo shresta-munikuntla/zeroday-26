@@ -9,12 +9,14 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Callable
 
+from backend import config
 from backend.agents.intelligence import analyze as intelligence_analyze
-from backend.rag.vector_store import capture_sources
+from backend.rag.vector_store import capture_sources, capture_validations
 from backend.security.audit import audit_connection, write_audit_event
 from backend.workflow.state import IncidentState, initial_state
 from backend.workflow.validators import (Agent1Output, Agent2Output, Agent3Output, Agent5Output,
-    check_evidence_ids, check_document_ids, cited_document_ids, evidence_readers)
+    check_evidence_ids, check_document_ids, cited_document_ids, evidence_readers,
+    FinalReport, nested_evidence_ids)
 
 
 @dataclass
@@ -26,6 +28,7 @@ class WorkflowServices:
     match_and_draft: Callable
     store: object
     analyze: Callable = intelligence_analyze
+    detection_model: type = Agent1Output
 
 
 _services = ContextVar('workflow_services', default=None)
@@ -50,7 +53,10 @@ def _audit(identifier, action, details, actor='orchestrator'):
 def run_incident_workflow() -> list[IncidentState]:
     services = _services.get()
     if services is None:
-        raise RuntimeError('Bind real P1/P3 functions and an existing SQLiteWorkflowStore using workflow_services')
+        from backend.workflow.integration import production_services
+        with production_services() as configured:
+            with workflow_services(configured):
+                return run_incident_workflow()
     try:
         detections = services.detect()
         if not isinstance(detections, list):
@@ -66,7 +72,7 @@ def run_incident_workflow() -> list[IncidentState]:
         evidence_ids = []
         step = 'detection_validation'
         try:
-            detection = Agent1Output.model_validate(raw_detection).model_dump()
+            detection = services.detection_model.model_validate(raw_detection).model_dump()
             evidence_ids = detection['evidence_ids']
             state['incident_id'] = detection['incident_id']
             state['detection'] = detection
@@ -82,18 +88,23 @@ def run_incident_workflow() -> list[IncidentState]:
             services.store.save(state, evidence_ids, 'detected')
             _audit(state['incident_id'], 'detection', {'evidence_ids': evidence_ids}, 'agent1')
 
+            _audit(state['incident_id'], 'validation', {'step': 'detection', 'status': 'passed', 'evidence_ids': evidence_ids})
+
             step = 'investigation'
             investigation = Agent2Output.model_validate(services.investigate(deepcopy(detection))).model_dump()
             # Keep optional raw context only for the untrusted model input. It
             # must not leak log banners or addresses into reports/state/drafts.
             agent_input = deepcopy(investigation)
             investigation = {key: value for key, value in investigation.items()
-                             if key in Agent2Output.model_fields}
+                             if key in Agent2Output.model_fields or key in {
+                                 'investigation_status', 'timeline', 'affected_assets',
+                                 'potential_impact', 'hypotheses', 'benign_explanations_to_check',
+                                 'checks_performed', 'confidence'}}
             if investigation['incident_id'] != state['incident_id']:
                 raise ValueError('Investigation incident ID mismatch')
             if not set(evidence_ids) <= set(investigation['evidence_ids']):
                 raise ValueError('Investigation omitted detection evidence')
-            all_ids = investigation['evidence_ids'] + investigation['permission_ids']
+            all_ids = nested_evidence_ids(investigation)
             if check_evidence_ids(all_ids):
                 raise ValueError('Investigation contains invalid evidence IDs')
             state['investigation'] = investigation
@@ -101,11 +112,16 @@ def run_incident_workflow() -> list[IncidentState]:
             _audit(state['incident_id'], 'investigation', {
                 'evidence_ids': all_ids, 'severity': investigation['severity']}, 'agent2')
 
+            _audit(state['incident_id'], 'validation', {'step': 'investigation', 'status': 'passed', 'evidence_ids': all_ids})
+
             step = 'intelligence'
-            with capture_sources() as sources:
+            with capture_sources() as sources, capture_validations() as validations:
                 try:
                     raw_intelligence = services.analyze(agent_input)
                 finally:
+                    for outcome in validations:
+                        _audit(state['incident_id'], 'intelligence_validation', {
+                            'step': 'model_output', 'status': outcome}, 'agent3')
                     _audit(state['incident_id'], 'retrieval', {
                         'document_ids': sorted({s['doc_id'] for s in sources})}, 'agent3')
             intelligence = Agent3Output.model_validate(raw_intelligence).model_dump()
@@ -114,18 +130,25 @@ def run_incident_workflow() -> list[IncidentState]:
                 raise ValueError('Intelligence contains unretrieved citations')
             if any(not action['source_document_ids'] for action in intelligence['recommended_actions']):
                 raise ValueError('Recommendation missing supporting sources')
+            _audit(state['incident_id'], 'validation', {'step': 'intelligence', 'status': 'passed', 'document_ids': sorted(retrieved_ids)})
             state['intelligence'] = intelligence
             services.store.save(state, evidence_ids, 'investigating')
             _audit(state['incident_id'], 'intelligence', {'document_ids': sorted(retrieved_ids)}, 'agent3')
 
             step = 'report_generation'
-            state['final_report'] = {
+            report = {
                 'incident_id': state['incident_id'], 'status': 'investigating',
                 'severity': investigation['severity'], 'evidence_ids': investigation['evidence_ids'],
                 'affected_asset_ids': investigation['affected_asset_ids'],
                 'detection': deepcopy(detection), 'investigation': deepcopy(investigation),
                 'intelligence': deepcopy(intelligence),
+                'ai_generation': {
+                    'mode': 'nemotron' if 'model_output_validated' in validations else (
+                        'fallback' if any('AI summary unavailable' in text for text in intelligence['limitations']) else 'unknown'),
+                    'model': config.NEMOTRON_MODEL if 'model_output_validated' in validations else None},
             }
+            state['final_report'] = FinalReport.model_validate(report).model_dump()
+            _audit(state['incident_id'], 'validation', {'step': 'final_report', 'status': 'passed'})
             services.store.save(state, evidence_ids, 'investigating')
             _audit(state['incident_id'], 'report_generation', {
                 'severity': investigation['severity'], 'evidence_ids': investigation['evidence_ids']})
@@ -139,6 +162,7 @@ def run_incident_workflow() -> list[IncidentState]:
                    for item in employees['employee_matches']):
                 raise ValueError('Employee result references an unaffected asset')
             # Only deterministic P3 determines recipients; no model value is used.
+            _audit(state['incident_id'], 'validation', {'step': 'notification_drafting', 'status': 'passed'})
             state['employee_matches'] = employees['employee_matches']
             _audit(state['incident_id'], 'notification_drafting', {
                 'recipient_ids': [item['recipient_id'] for item in state['employee_matches']],
@@ -155,6 +179,8 @@ def run_incident_workflow() -> list[IncidentState]:
             if state['final_report'] is not None:
                 state['final_report']['status'] = 'incomplete'
             try:
+                _audit(state['incident_id'] or None, 'validation_rejected', {
+                    'step': step, 'error_type': type(error).__name__})
                 _audit(state['incident_id'] or None, 'error', {
                     'step': step, 'error_type': type(error).__name__,
                     'evidence_ids': evidence_ids})

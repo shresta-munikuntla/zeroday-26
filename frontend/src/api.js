@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api' });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8001/api' });
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('sentinel_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -20,3 +20,6 @@ export async function approve(id) { return (await api.post(`/incidents/${id}/app
 export async function reject(id) { return (await api.post(`/incidents/${id}/reject`, { comment: '' })).data; }
 export async function send(id, recipient_ids) { return (await api.post(`/incidents/${id}/send`, { recipient_ids })).data; }
 export default api;
+
+export async function checkNemotron() { return (await api.post('/ai/check')).data; }
+export async function previewIntelligence(id) { return (await api.post(`/incidents/${id}/preview-intelligence`)).data; }

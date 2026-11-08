@@ -52,3 +52,22 @@ def capture_sources():
         yield sources
     finally:
         _receipt.reset(token)
+
+
+_validation_receipt = ContextVar('intelligence_validation', default=None)
+
+
+def record_validation(status):
+    receipt = _validation_receipt.get()
+    if receipt is not None:
+        receipt.append(status)
+
+
+@contextmanager
+def capture_validations():
+    statuses = []
+    token = _validation_receipt.set(statuses)
+    try:
+        yield statuses
+    finally:
+        _validation_receipt.reset(token)

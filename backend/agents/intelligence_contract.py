@@ -1,7 +1,8 @@
-"""PROVISIONAL P2 contracts, authorized while P1/spec §2 are unavailable.
+"""Agent 3 JSON schema and its explicit investigation search input.
 
-Replace/reconcile these with the team's official contracts before integration.
-They do not define or modify P1 or P3 components.
+Architecture specifies the six output groups, while the repository's existing
+P2 nested schema is retained for compatibility. Native P1/P3 schemas are in
+workflow.validators; the external spec referenced by the architecture is absent.
 """
 from pydantic import BaseModel, ConfigDict, Field, AliasChoices
 

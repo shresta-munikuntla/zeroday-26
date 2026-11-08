@@ -33,10 +33,11 @@ def test_success_order_persistence_audit_and_idempotency(services):
         assert row[0] == 'awaiting_approval'
         assert json.loads(row[1]) == state['final_report']
         audits = list_audit_events('INC-001')
-        assert [a['action'] for a in audits] == ['detection', 'investigation', 'retrieval', 'intelligence', 'report_generation', 'notification_drafting', 'final_status']
-        assert audits[0]['details']['evidence_ids'] == agent1.DETECTION['evidence_ids']
-        assert audits[1]['details']['evidence_ids'][-1] == 'PERM-003'
-        assert audits[2]['details']['document_ids'] == ['POL-003']
+        stages = [a for a in audits if a['action'] != 'validation']
+        assert [a['action'] for a in stages] == ['detection', 'investigation', 'retrieval', 'intelligence', 'report_generation', 'notification_drafting', 'final_status']
+        assert stages[0]['details']['evidence_ids'] == agent1.DETECTION['evidence_ids']
+        assert stages[1]['details']['evidence_ids'][-1] == 'PERM-003'
+        assert stages[2]['details']['document_ids'] == ['POL-003']
         assert all(a['actor_type'] == 'agent' and a['timestamp'] for a in audits)
         repeated = run_incident_workflow()
         assert repeated == result
@@ -142,9 +143,29 @@ def test_audit_does_not_store_credentials_or_employee_records(services, monkeypa
         assert 'LOG-101' in encoded
 
 
-def test_unbound_workflow_never_uses_fakes():
-    with pytest.raises(RuntimeError, match='Bind real P1/P3'):
-        run_incident_workflow()
+def test_default_workflow_uses_real_agents(initialized_store, monkeypatch, tmp_path):
+    from backend import config
+    from backend.storage import connect
+    from backend.security.audit import list_audit_events
+    monkeypatch.setattr(config, 'NEMOTRON_API_KEY', '')
+    monkeypatch.setattr(config, 'CHROMA_PERSIST_DIRECTORY', str(tmp_path / 'empty-index'))
+    states = run_incident_workflow()
+    assert len(states) == 1
+    state = states[0]
+    assert state['incident_id'] == 'INC-001' and not state['errors']
+    assert state['final_report']['status'] == 'awaiting_approval'
+    assert state['final_report']['severity'] == 'high'
+    assert {m['recipient_id'] for m in state['employee_matches']} == {'EMP-001', 'EMP-003', 'EMP-006'}
+    assert 'No relevant source was retrieved.' in state['intelligence']['limitations']
+    assert run_incident_workflow() == states
+    with connect() as db:
+        assert db.execute('SELECT count(*) FROM incidents').fetchone()[0] == 1
+        assert db.execute('SELECT count(*) FROM notifications').fetchone()[0] == 3
+        assert db.execute('SELECT final_report_json FROM incidents').fetchone()[0]
+    assert {'detection', 'investigation', 'retrieval', 'intelligence', 'report_generation',
+            'notification_drafting', 'final_status'} <= {e['action'] for e in list_audit_events('INC-001')}
+    assert '@' not in json.dumps(states)
+
 
 
 def test_detection_failure_is_audited_without_inventing_incident(services):
@@ -189,3 +210,76 @@ def test_agent5_cannot_return_unaffected_asset(services):
         state = run_incident_workflow()[0]
         assert state['errors'] and state['employee_matches'] is None
         assert state['final_report']['status'] == 'incomplete'
+
+
+def test_native_p1_contracts_validate_all_required_fields(detections, investigation):
+    from pydantic import ValidationError
+    from backend.workflow.validators import NativeAgent1Output, NativeAgent2Output
+    NativeAgent1Output.model_validate(detections[0])
+    NativeAgent2Output.model_validate(investigation)
+    for field in NativeAgent1Output.model_fields:
+        broken = deepcopy(detections[0])
+        del broken[field]
+        with pytest.raises(ValidationError):
+            NativeAgent1Output.model_validate(broken)
+    for field in NativeAgent2Output.model_fields:
+        broken = deepcopy(investigation)
+        del broken[field]
+        with pytest.raises(ValidationError):
+            NativeAgent2Output.model_validate(broken)
+    broken = deepcopy(investigation)
+    broken['timeline'][0]['evidence_ids'] = 'LOG-101'
+    with pytest.raises(ValidationError):
+        NativeAgent2Output.model_validate(broken)
+
+
+def test_nested_fake_evidence_stops_workflow(services):
+    def invalid(detection):
+        result = agent2.investigate(detection)
+        result['timeline'] = [{'evidence_ids': ['LOG-999']}]
+        return result
+    services.investigate.side_effect = invalid
+    with workflow_services(services):
+        state = run_incident_workflow()[0]
+        assert state['errors'] and state['investigation'] is None
+        services.analyze.assert_not_called()
+        assert any(event['action'] == 'validation_rejected' for event in list_audit_events('INC-001'))
+
+
+def test_native_agent2_can_be_analyzed_directly(investigation, monkeypatch):
+    from backend.agents import intelligence
+    monkeypatch.setattr(intelligence, 'search_knowledge', lambda *args, **kwargs: [])
+    result = intelligence.analyze(investigation)
+    assert intelligence.NO_SOURCES in result['limitations']
+
+
+def test_production_persists_p1_incident_key(initialized_store, monkeypatch, tmp_path):
+    from backend.database.seed import seed
+    from backend.database.db import find_incident_by_evidence, next_incident_number
+    from backend import config
+    monkeypatch.setenv('DATABASE_URL', f'sqlite:///{tmp_path / "p1.db"}')
+    seed()
+    monkeypatch.setattr(config, 'CHROMA_PERSIST_DIRECTORY', str(tmp_path / 'missing'))
+    state = run_incident_workflow()[0]
+    assert not state['errors']
+    assert find_incident_by_evidence(state['detection']['evidence_ids']) == 'INC-001'
+    assert next_incident_number() == 2
+    assert run_incident_workflow()[0]['incident_id'] == 'INC-001'
+
+
+def test_environment_example_is_secret_free():
+    from backend import config
+    for line in (config.ROOT / '.env.example').read_text().splitlines():
+        if line.strip() and not line.lstrip().startswith('#'):
+            key, separator, value = line.partition('=')
+            assert separator and not value.strip(), f'{key} should be empty in the example'
+
+
+def test_production_detector_failure_has_global_audit(initialized_store, monkeypatch):
+    from backend.agents import threat_detection
+    monkeypatch.setattr(threat_detection, 'detect', Mock(side_effect=TimeoutError('private prompt')))
+    with pytest.raises(RuntimeError, match='Detection failed'):
+        run_incident_workflow()
+    events = list_audit_events(None)
+    assert any(e['action'] == 'error' and e['details']['step'] == 'detection' for e in events)
+    assert 'private prompt' not in json.dumps(events)

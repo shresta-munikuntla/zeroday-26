@@ -1,155 +1,88 @@
-# Provisional P2 contracts and configuration
+# P2 contracts and teammate integration
 
-These placeholders were explicitly authorized in chat while Agents 1 and 2 are
-unfinished. They are development interfaces, **not a transcription of spec §2**.
-No existing P1/P3 interfaces were changed. Reconcile them with the official spec
-and P1/P3 before wiring the Orchestrator.
+`run_incident_workflow()` binds real P1 and P3 functions automatically through
+`backend/workflow/integration.py`. API startup and run-demo use the same path.
+Explicit `workflow_services(WorkflowServices(...))` remains for tests/adapters;
+production never imports fixture agents or reads the scenario manifest.
 
-## Investigation input
+## Contract sources
 
-`backend.agents.intelligence.analyze(investigation: dict) -> dict`
+Architecture §2.3 defines `IncidentState` exactly: incident_id, detection,
+investigation, intelligence, employee_matches, final_report, approval_status,
+notification_status, and errors. Lifecycle status is persisted in the incident
+row and final report rather than adding an undocumented state field.
 
-| Field | Provisional type | Meaning |
-|---|---|---|
-| status | string | Investigation status; `investigation_status` alias accepted |
-| confirmed_facts | list of strings or objects | P1-confirmed evidence only |
-| investigation_reasons | list of strings | Reasons; `reasons` alias accepted |
-| additional fields | any JSON data | Preserved as untrusted input to the model |
+The architecture specifies Agent 3's six output groups, but references an external
+spec for detailed nested contracts. That spec is absent. The existing nested P2
+schema is retained; native P1/P3 models follow their actual implementations.
 
-Missing required fields or incorrect types raise Pydantic ValidationError before
-retrieval or model calls. The sample in `tests/fixtures/investigation_placeholder.json`
-is explicitly synthetic P2 test input derived from the documented scenario,
-not output from an implemented Agent 2. Runtime code never loads that fixture or
-the scenario manifest.
+## Native validation before adaptation
 
-## Intelligence output
+`backend/workflow/validators.py` defines strict native models:
 
-All six fields are required. All list items have `source_document_ids: list[str]`.
-Unknown output fields are rejected.
+- `NativeAgent1Output`: ID, detection_status, summary, severity_initial, accounts,
+  source IP addresses, assets, time_window, evidence IDs, reasons, uncertainties,
+  and rules_triggered.
+- `NativeAgent2Output`: ID, investigation_status, timeline, affected_assets,
+  potential_impact, confirmed_facts, hypotheses, benign_explanations_to_check,
+  checks_performed, severity, confidence, and evidence IDs. Nested timeline and
+  per-asset evidence are validated against P1's existence functions.
+- `NativeAgent5Draft`: P3's notification row plus decoded asset_ids. Extra
+  database delivery/approval metadata is allowed; required draft fields are not
+  defaulted. Each draft must belong to the report incident.
 
-| Field | Item fields besides source_document_ids |
+The explicit workflow adapter contracts (`Agent1Output`, `Agent2Output`,
+`Agent5Output`) also support small, labelled test fixtures. Native runtime outputs
+are validated before conversion to these compact fields. Missing native fields
+are errors, not replaced by fixture values.
+
+The investigation adapter derives `status` from `investigation_status`,
+`permission_ids` from validated evidence, `affected_asset_ids` from affected_assets,
+and search reasons from Agent 1's summary/reasons. It preserves the native
+investigation fields for P3's owner-specific drafting. Standalone `analyze()` also
+accepts raw native Agent 2 output, validates it, and uses checks_performed as
+search context when no detection reasons were supplied.
+
+## Agent 3 output
+
+`backend/agents/intelligence_contract.py` contains these six required lists:
+
+| Group | Required entry fields |
 |---|---|
-| matched_techniques | technique_id: str, name: str, relevance: str |
-| policy_references | policy_id: str, section: str, summary: str |
-| historical_cases | case_id: str, summary: str, relevance: str |
-| recommended_actions | action: str |
-| recommended_resources | title: str, url: str |
-| limitations | strings (no citation field) |
+| matched_techniques | technique_id, name, relevance, source_document_ids |
+| policy_references | policy_id, section, summary, source_document_ids |
+| historical_cases | case_id, summary, relevance, source_document_ids |
+| recommended_actions | action, source_document_ids |
+| recommended_resources | title, url, source_document_ids |
+| limitations | strings |
 
-Citations must refer to retrieved documents. Entries with no valid supporting
-citations are dropped, and limitations explain removal. Technique IDs, policy
-IDs/sections, case IDs, and resource URLs are checked against retrieved metadata.
-No test-fixture source or POL-099 is accepted as authority.
+Extra model fields, including severity and recipients, are forbidden. Sources
+are recorded in a request-local context during actual retrieval, independently
+of the model's reported IDs. The orchestrator checks citations against that
+receipt. Policy sections, technique/case identities, and resource URLs are checked
+against retrieved metadata inside Agent 3. POL-099 is excluded from usable context
+and recommendations even when included in the test index.
 
-The model is instructed to distinguish guidance/historical context from current
-facts. Schema, IDs, metadata, and URLs are checked deterministically; arbitrary
-natural-language semantic correctness is not proved by those checks. A conservative
-data-transfer-language check rejects the model output rather than accepting an
-unsupported exfiltration claim. Mocked tests do not establish live model behavior.
+## Report, persistence, and audit
 
-All fallback responses contain:
+`FinalReport` validates the assembled report before P3 receives it. P1 severity
+and P3 recipients remain deterministic. Successful state is saved as
+awaiting_approval with pending approval and not_sent notification status. Errors
+stop only the affected incident, retain validated intermediate results, and save
+incomplete status. Whole-detector failure raises and is audited without a fake ID.
 
-`AI summary unavailable; showing retrieved sources only`
+The existing P1 and P3 databases are currently separate. ApplicationWorkflowStore
+adds only evidence_key/state_json/final_report_json columns and a unique evidence
+index to P3's incidents table. It also persists incident records using P1's
+existing schema and comma-joined evidence key, so P1's ID allocator sees them.
+No P1 schema is replaced. Test-only SQLiteWorkflowStore uses an isolated explicit
+schema. Two-store writes are not atomic; database consolidation is future work.
 
-An empty retrieval additionally contains:
+`write_audit_event` and `list_audit_events` support the bound P1-style audit schema
+and the existing P3 audit schema. Calls without an explicit binding use P3's
+application connection. Existing P3 API audit helper signatures are preserved.
+Details are allowlisted, credential/email values redacted, and step outcomes
+contain IDs/statuses rather than prompts, employee records, or provider errors.
 
-`No relevant source was retrieved.`
-
-Fallback copies policy/case text, MITRE titles/IDs, and URLs from retrieval only;
-it recommends reviewing the cited sections and explicitly qualifies applicability.
-Retrieval can include distractors (T1110/CASE-003); a retrieved entry is guidance,
-not a finding that the technique occurred. No action is executed.
-
-## Development dependencies and configuration
-
-`requirements.txt` pins the locally exercised P2 dependencies. It is explicitly
-provisional because the exact spec §8 list is unavailable. It does not replace
-P1/P3 dependency requirements.
-
-| Setting | Default | Origin |
-|---|---|---|
-| NEMOTRON_BASE_URL | empty | Genuine Brev endpoint not provided |
-| NEMOTRON_API_KEY | empty | No credentials supplied; immediate LLMUnavailable |
-| NEMOTRON_MODEL | empty | Genuine deployment model ID not provided |
-| EMBEDDING_MODEL | all-MiniLM-L6-v2 | Architecture |
-| CHROMA_PERSIST_DIRECTORY | .cache/chroma | User-authorized local default |
-
-`.env.example` keeps all five values empty. Blank embedding/storage settings use
-the defaults above. `.cache/chroma` and `.env` are already ignored. No working
-endpoint, key, or model identifier was fabricated.
-
-## Workflow contracts and missing integrations (Steps 5–8)
-
-The repository still contains no spec §2, P1/P3 implementation, SQLite schema,
-DB helper, or agreed evidence-query module. The workflow therefore requires
-explicit bindings rather than importing guessed P1 helper paths or using fakes
-in production. The user-directed sqlite3 implementation takes precedence over
-the architecture document's older SQLAlchemy wording. No SQLAlchemy dependency
-was added.
-
-Provisional models in `backend/workflow/validators.py`:
-
-| Agent | Provisional output |
-|---|---|
-| 1 detect() | list of objects with incident_id: str (INC-digits), evidence_ids: nonempty list[str], reasons: list[str] |
-| 2 investigate(detection) | prior InvestigationInput plus incident_id: str, evidence_ids: nonempty list[str], permission_ids: list[str], affected_asset_ids: nonempty list[str], severity: low/medium/high/critical |
-| 3 analyze(investigation) | IntelligenceOutput already documented above |
-| 5 match_and_draft(report) | incident_id: str, employee_matches: list of {recipient_id: str, asset_id: str, draft: str} |
-
-Agent 2 extra raw context is available only as untrusted Agent 3 input. It is not
-copied to persisted state/reports/P3 input. The final report's provisional fields
-are incident_id, status, severity, evidence_ids, affected_asset_ids, detection,
-investigation, intelligence. Employee matches remain a separate IncidentState
-field. Severity always comes from validated P1 investigation; recipients always
-come from validated P3, and must reference affected assets.
-
-`IncidentState` has exactly the architecture §2.3 fields. Lifecycle status is
-stored in the incidents row and final_report, **not added to IncidentState**.
-Approval remains pending and notification remains not_sent. The orchestrator
-never approves or sends notifications.
-
-Bind actual functions with:
-
-```python
-from backend.workflow.orchestrator import WorkflowServices, workflow_services, run_incident_workflow
-from backend.workflow.storage import SQLiteWorkflowStore
-
-# Supply the real P1/P3 callables and a real sqlite3.Connection after reconciling
-# the schema and contracts. No fake/default detector or employee matcher exists.
-services = WorkflowServices(detect, investigate, event_exists, permission_exists,
-                            match_and_draft, SQLiteWorkflowStore(connection))
-with workflow_services(services):
-    states = run_incident_workflow()
-```
-
-The store checks existing columns and creates no production tables. Expected
-provisional columns are:
-
-- incidents: incident_id (primary key), evidence_key (unique), status, state_json,
-  final_report_json.
-- audit_events: incident_id, actor_type, actor_id, action, resource_type,
-  resource_id, details_json, timestamp.
-
-**These are not a discovered P1 database schema.** The matching SQL exists only in
-`backend/tests/fakes/schema.sql`. Adapt the P2 storage/audit adapters to P1's
-actual schema before integration. The unique evidence key is JSON of sorted
-unique detection evidence IDs; repeated evidence reuses the persisted state,
-even if another detection supplies a new label. An incident ID cannot overwrite
-a different evidence set. Incomplete incidents are reused without implicit retry.
-
-Audit details are allowlisted summaries of IDs/statuses, never raw logs or
-employee records. The writer redacts configured keys, common credential patterns,
-and email addresses. Error details include step and exception type, not raw
-exception strings. If detection fails before producing incidents, it records a
-workflow error and raises without inventing an incident. If SQLite/audit itself
-is unavailable, returned errors record that persistence failed; no audit success
-is claimed.
-
-Separate folders exist at `backend/agents/agent1/` through `agent5/`, each with
-an empty initializer and a README pointing to the canonical required path.
-Implementations were not moved, duplicated, or substituted into P1/P3 namespaces.
-
-The runnable fixture demo lives at `backend/tests/run_fixture_workflow.py` and
-imports only explicitly test-only fake P1/P3 modules. It uses a temporary SQLite
-database, the real RAG/Agent 3, and an explicitly empty Nemotron key. It runs twice,
-asserts idempotency, prints the state/audit, and deletes its temporary SQLite DB.
+See [p2-verification.md](p2-verification.md) for executed results, limitations,
+mock/live environment examples, and the private SSH tunnel commands.

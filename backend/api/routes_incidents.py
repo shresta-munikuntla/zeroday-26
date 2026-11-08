@@ -52,24 +52,14 @@ def notification_views(incident_id: str) -> list[dict]:
 
 @router.post("/run-demo")
 def run_demo(payload: DemoRequest, user: Viewer):
-    candidates = run_detection_and_investigation()
-    if not candidates:
+    from backend.workflow.orchestrator import run_incident_workflow
+    states = run_incident_workflow()
+    if not states:
         raise HTTPException(409, "No suspicious incidents were detected in the current data")
-    outputs = candidates[0]
-    report = dashboard_report(outputs)
-    with connect() as db:
-        db.execute("""INSERT INTO incidents (incident_id, severity, status, approval_status, summary, report_json)
-            VALUES (?, ?, 'awaiting_approval', 'pending', ?, ?)
-            ON CONFLICT(incident_id) DO UPDATE SET severity=excluded.severity,
-                status='awaiting_approval', approval_status='pending', summary=excluded.summary,
-                report_json=excluded.report_json""",
-            (report["incident_id"], report["severity"], report["summary"], json.dumps(report)))
-        db.execute("UPDATE notifications SET status='draft', approved_by=NULL, approved_at=NULL, sent_at=NULL, delivery_result=NULL WHERE incident_id=?",
-                   (report["incident_id"],))
-    match_and_draft(outputs)
-    write_audit_event(report["incident_id"], user["user_id"], "demo_run", {"source": "Agent 1 and Agent 2"})
-    incident = incident_or_404(report["incident_id"])
-    return {**incident["report"], "status": incident["status"], "approval_status": incident["approval_status"]}
+    state = states[0]
+    incident = incident_or_404(state['incident_id'])
+    return {**incident['report'], 'status': incident['status'],
+            'approval_status': incident['approval_status'], 'errors': state['errors']}
 
 
 @router.get("")
@@ -107,7 +97,7 @@ def audit(incident_id: str, user: Viewer):
 @router.post("/{incident_id}/approve")
 def approve(incident_id: str, payload: ReviewRequest, user: Reviewer):
     incident = incident_or_404(incident_id)
-    if incident["approval_status"] != "pending":
+    if incident["approval_status"] != "pending" or incident['status'] != 'awaiting_approval':
         raise HTTPException(409, "Incident is not awaiting approval")
     with connect() as db:
         db.execute("UPDATE incidents SET approval_status='approved',status='approved' WHERE incident_id=?", (incident_id,))
@@ -120,7 +110,7 @@ def approve(incident_id: str, payload: ReviewRequest, user: Reviewer):
 @router.post("/{incident_id}/reject")
 def reject(incident_id: str, payload: ReviewRequest, user: Reviewer):
     incident = incident_or_404(incident_id)
-    if incident["approval_status"] != "pending":
+    if incident["approval_status"] != "pending" or incident['status'] != 'awaiting_approval':
         raise HTTPException(409, "Incident is not awaiting approval")
     with connect() as db:
         db.execute("UPDATE incidents SET approval_status='rejected',status='rejected' WHERE incident_id=?", (incident_id,))
@@ -128,3 +118,24 @@ def reject(incident_id: str, payload: ReviewRequest, user: Reviewer):
                    (user["user_id"], incident_id))
     write_audit_event(incident_id, user["user_id"], "rejected", {"comment": payload.comment})
     return {"incident_id": incident_id, "approval_status": "rejected"}
+
+
+@router.post('/{incident_id}/preview-intelligence')
+def preview_intelligence(incident_id: str, user: Reviewer):
+    from backend import config
+    from backend.agents.intelligence import analyze
+    from backend.rag.vector_store import capture_sources, capture_validations
+    report = incident_or_404(incident_id)['report']
+    investigation = report.get('investigation')
+    if not investigation:
+        raise HTTPException(409, 'A completed investigation is required for an AI preview')
+    with capture_sources() as sources, capture_validations() as outcomes:
+        intelligence = analyze(investigation)
+    mode = 'nemotron' if 'model_output_validated' in outcomes else 'fallback'
+    ids = sorted({source['doc_id'] for source in sources})
+    from backend.security.audit import write_audit_event as audit_event
+    audit_event(incident_id, 'user', user['user_id'], 'intelligence_preview',
+                'incident', incident_id, {'status': mode, 'document_ids': ids})
+    return {'intelligence': intelligence, 'mode': mode,
+            'model': config.NEMOTRON_MODEL if mode == 'nemotron' else None,
+            'document_ids': ids}

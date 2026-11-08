@@ -33,12 +33,15 @@ def search_knowledge(query: str, filters: dict | None = None, k: int = 5) -> lis
         **kwargs,
     )
     matches = []
+    seen = set()
     for metadata, text, distance in zip(result['metadatas'][0], result['documents'][0], result['distances'][0]):
         if not math.isfinite(distance) or distance < 0:
             continue
         score = 1.0 / (1.0 + distance)
-        if score >= MIN_SIMILARITY:
+        key = (metadata['doc_id'], metadata['section'], text)
+        if score >= MIN_SIMILARITY and key not in seen:
+            seen.add(key)
             matches.append({key: metadata.get(key, '') for key in
                             ('doc_id', 'title', 'section', 'source_type', 'url')} |
-                           {'text': text, 'score': score})
+                           {'url': metadata.get('url') or None, 'text': text, 'score': score})
     return matches[:k]

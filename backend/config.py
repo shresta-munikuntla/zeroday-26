@@ -1,7 +1,7 @@
-"""Shared configuration with offline development defaults.
+"""Dotenv-backed local settings; an empty Nemotron key always selects fallback.
 
-The local persistence default is user-authorized, not taken from the missing
-specification. Brev endpoint identifiers stay empty until supplied.
+A local-vllm placeholder may be supplied for an unauthenticated SSH-forwarded
+server. It is an SDK configuration value, not an authentication credential.
 """
 import os
 from pathlib import Path

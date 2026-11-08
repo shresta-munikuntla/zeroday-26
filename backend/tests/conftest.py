@@ -25,13 +25,20 @@ FIXTURES = Path(__file__).with_name("fixtures")
 # ---------------------------------------------------------------- P3: API
 @pytest.fixture
 def initialized_store(tmp_path, monkeypatch):
+    # Production workflow writes P1 incidents too; isolate both stores so API
+    # tests cannot mutate the session-scoped read-only P1 seed assertions.
+    from backend.database.seed import seed
+    monkeypatch.setenv('DATABASE_URL', f'sqlite:///{tmp_path / "agent.sqlite3"}')
+    seed()
     monkeypatch.setattr(storage, "DB_PATH", tmp_path / "test.sqlite3")
     storage.initialize()
     initialize_users()
 
 
 @pytest.fixture
-def client(initialized_store):
+def client(initialized_store, monkeypatch):
+    from backend.rag import vector_store
+    monkeypatch.setattr(vector_store, 'get_collection', lambda: None)
     with TestClient(app) as test_client:
         yield test_client
 
@@ -119,3 +126,11 @@ def services(tmp_path):
     )
     yield result
     connection.close()
+
+
+@pytest.fixture(autouse=True)
+def offline_nemotron_by_default(monkeypatch, request):
+    # Unit/API tests must never consume Brev credits, even with a real local .env.
+    if request.node.path.name != 'test_nemotron_live.py':
+        from backend import config
+        monkeypatch.setattr(config, 'NEMOTRON_API_KEY', '')

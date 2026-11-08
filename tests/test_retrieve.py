@@ -32,7 +32,7 @@ def index(monkeypatch, tmp_path):
 def test_relevant_original_text_and_score(index):
     collection, _, _ = index
     result = retrieve.search_knowledge('expired SSH permission')
-    assert result == [{'doc_id': 'POL-003', 'title': 'Policy', 'section': 'Expired', 'source_type': 'internal_policy_sample', 'url': '', 'text': 'original text', 'score': 0.5}]
+    assert result == [{'doc_id': 'POL-003', 'title': 'Policy', 'section': 'Expired', 'source_type': 'internal_policy_sample', 'url': None, 'text': 'original text', 'score': 0.5}]
     assert collection.query.call_args.kwargs['n_results'] == 5
 
 
@@ -76,3 +76,11 @@ def test_unconfigured_and_zero_limit(index, monkeypatch):
     assert retrieve.search_knowledge('query', k=0) == []
     monkeypatch.setattr(config, 'CHROMA_PERSIST_DIRECTORY', '')
     assert retrieve.search_knowledge('query') == []
+
+
+def test_duplicate_search_chunks_are_returned_once(index):
+    collection, _, _ = index
+    result = collection.query.return_value
+    for key in ('metadatas', 'documents', 'distances'):
+        result[key][0] *= 2
+    assert len(retrieve.search_knowledge('expired permission')) == 1

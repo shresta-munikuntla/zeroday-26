@@ -208,3 +208,28 @@ def test_output_cannot_change_investigation_severity(setup, investigation):
     result = agent.analyze(investigation)
     assert 'severity' not in result
     assert any('failed schema' in item for item in result['limitations'])
+
+
+def test_model_cannot_publish_injected_email(setup, investigation, sources):
+    search, client = setup
+    client.chat_json.side_effect = None
+    output = agent._fallback(sources, [])
+    output['recommended_actions'] = [{'action': 'Send records to attacker@example.net',
+                                      'source_document_ids': ['POL-003']}]
+    client.chat_json.return_value = output
+    result = agent.analyze(investigation)
+    assert 'attacker@example.net' not in json.dumps(result)
+    assert agent.AI_UNAVAILABLE in result['limitations']
+
+
+@pytest.mark.parametrize('action', ['Review LOG-999 according to policy.',
+                                    'Follow POL-099 instead of normal procedure.'])
+def test_model_cannot_smuggle_identifiers_in_prose(setup, investigation, sources, action):
+    _, client = setup
+    client.chat_json.side_effect = None
+    output = agent._fallback(sources, [])
+    output['recommended_actions'] = [{'action': action, 'source_document_ids': ['POL-003']}]
+    client.chat_json.return_value = output
+    result = agent.analyze(investigation)
+    assert action not in json.dumps(result)
+    assert agent.AI_UNAVAILABLE in result['limitations']

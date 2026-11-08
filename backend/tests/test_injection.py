@@ -78,3 +78,28 @@ def test_poisoned_real_index_log190_and_full_no_key_workflow(services, monkeypat
         assert run_incident_workflow() == result
         assert services.store.connection.execute('SELECT count(*) FROM incidents').fetchone()[0] == 1
         assert any(a['action'] == 'retrieval' and a['details']['document_ids'] for a in audit)
+
+
+@pytest.mark.skipif(os.getenv('SENTINELAI_RUN_RAG_INTEGRATION') != '1', reason='Opt-in real embeddings')
+def test_real_p1_p2_p3_poisoned_index(initialized_store, monkeypatch, tmp_path):
+    from backend import config
+    from backend.rag.ingest import ingest
+    from backend.security.audit import list_audit_events
+    monkeypatch.setattr(config, 'NEMOTRON_API_KEY', '')
+    monkeypatch.setattr(config, 'CHROMA_PERSIST_DIRECTORY', str(tmp_path / 'production-index'))
+    assert ingest(True) == (12, 39, [])
+    states = run_incident_workflow()
+    assert len(states) == 1 and not states[0]['errors']
+    state = states[0]
+    assert state['final_report']['severity'] == 'high'
+    assert {m['recipient_id'] for m in state['employee_matches']} == {'EMP-001', 'EMP-003', 'EMP-006'}
+    encoded = json.dumps(state)
+    assert 'POL-099' not in encoded and '@' not in encoded
+    events = list_audit_events('INC-001')
+    ids = set(next(e['details']['document_ids'] for e in events if e['action'] == 'retrieval'))
+    assert 'MITRE-T1078' in ids and 'CASE-002' in ids
+    assert ids & {'POL-001', 'POL-002', 'POL-003'}
+    for group, items in state['intelligence'].items():
+        if group != 'limitations':
+            assert all(set(item['source_document_ids']) <= ids for item in items)
+    assert run_incident_workflow() == states

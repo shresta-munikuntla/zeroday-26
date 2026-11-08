@@ -37,8 +37,25 @@ def write_audit_event(incident_id, actor_type, actor_id, action,
                       resource_type, resource_id, details):
     connection = _connection.get()
     if connection is None:
-        raise RuntimeError('An existing SQLite audit connection must be bound')
+        with connect() as db:
+            with audit_connection(db):
+                return write_audit_event(incident_id, actor_type, actor_id, action, resource_type, resource_id, details)
     safe = {key: _clean(value) for key, value in details.items() if key in _FIELDS}
+    columns = {row[1] for row in connection.execute('PRAGMA table_info(audit_events)')}
+    if 'details_json' not in columns and incident_id is None:
+        # P3's legacy schema requires an incident ID. P1's existing audit table
+        # supports global failures, so never invent a sentinel incident.
+        from backend.database.db import connection as native_connection
+        with native_connection() as native:
+            with audit_connection(native):
+                return write_audit_event(None, actor_type, actor_id, action, resource_type, resource_id, details)
+    if 'details_json' not in columns:
+        payload = {'actor_type': actor_type, 'resource_type': resource_type,
+                   'resource_id': resource_id, **safe}
+        with connection:
+            connection.execute('INSERT INTO audit_events (incident_id, actor_id, action, detail_json) VALUES (?, ?, ?, ?)',
+                               (incident_id, actor_id, action, json.dumps(payload)))
+        return
     with connection:
         connection.execute(
             'INSERT INTO audit_events (incident_id, actor_type, actor_id, action, '
@@ -50,10 +67,21 @@ def write_audit_event(incident_id, actor_type, actor_id, action,
 def list_audit_events(incident_id):
     connection = _connection.get()
     if connection is None:
-        raise RuntimeError('An existing SQLite audit connection must be bound')
+        with connect() as db:
+            with audit_connection(db):
+                return list_audit_events(incident_id)
+    columns = {row[1] for row in connection.execute('PRAGMA table_info(audit_events)')}
+    if 'details_json' not in columns and incident_id is None:
+        from backend.database.db import connection as native_connection
+        with native_connection() as native:
+            with audit_connection(native):
+                return list_audit_events(None)
+    if 'details_json' not in columns:
+        rows = connection.execute('SELECT * FROM audit_events WHERE incident_id=? ORDER BY event_id', (incident_id,)).fetchall()
+        return [{**dict(row), 'details': json.loads(row['detail_json'])} for row in rows]
     cursor = connection.execute(
         'SELECT incident_id, actor_type, actor_id, action, resource_type, resource_id, '
-        'details_json, timestamp FROM audit_events WHERE incident_id = ? ORDER BY rowid', (incident_id,))
+        'details_json, timestamp FROM audit_events WHERE incident_id IS ? ORDER BY rowid', (incident_id,))
     keys = [column[0] for column in cursor.description]
     events = []
     for row in cursor.fetchall():

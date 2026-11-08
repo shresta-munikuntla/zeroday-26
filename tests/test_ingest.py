@@ -88,3 +88,16 @@ def test_cli_fixture_flag(monkeypatch, include):
     monkeypatch.setattr(sys, 'argv', ['ingest'] + (['--include-test-fixtures'] if include else []))
     module.main()
     runner.assert_called_once_with(include)
+
+
+def test_duplicate_headings_preserve_sections_and_stable_unique_ids(tmp_path):
+    from backend.rag.ingest import chunk_id
+    text = '---\ndoc_id: DUP\ntitle: Duplicate\nsource_type: example\n---\n## Summary\nFirst\n## Summary\nSecond\n## Summary [2]\nLiteral\n## Summary\nThird'
+    folder = tmp_path / 'mitre' / 'nested'
+    folder.mkdir(parents=True)
+    (folder / 'example.md').write_text(text)
+    count, chunks, errors = read_chunks(tmp_path)
+    assert count == 1 and not errors
+    assert [c['section'] for c in chunks] == ['Summary', 'Summary', 'Summary [2]', 'Summary']
+    assert [chunk_id(c) for c in chunks] == ['DUP#Summary', 'DUP#Summary [3]', 'DUP#Summary [2]', 'DUP#Summary [4]']
+    assert chunks == read_chunks(tmp_path)[1]
