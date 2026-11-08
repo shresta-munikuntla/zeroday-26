@@ -42,3 +42,23 @@ def test_reset_is_blocked_while_a_delivery_is_in_progress(client, auth_headers):
     response = client.post("/api/incidents/reset-demo", json={}, headers=auth_headers)
     assert response.status_code == 409
     assert client.get("/api/incidents/INC-001", headers=auth_headers).status_code == 200
+
+
+def test_send_after_reset_uses_a_new_idempotency_key(client, auth_headers, monkeypatch):
+    """Regression: a reused key made Photon replay the old result and send nothing."""
+    import backend.api.routes_notifications as routes
+
+    keys = []
+
+    class Recorder:
+        def send(self, channel, subject, body, *, recipient_label=None, idempotency_key=None, recipient_id=None):
+            keys.append(idempotency_key)
+            return {"status": "sent", "detail": "ok"}
+
+    monkeypatch.setattr(routes, "get_adapter", lambda: Recorder())
+    for _ in range(2):
+        client.post("/api/incidents/reset-demo", json={}, headers=auth_headers)
+        client.post("/api/incidents/INC-001/approve", json={}, headers=auth_headers)
+        assert client.post("/api/incidents/INC-001/send", json={"recipient_ids": ["EMP-001"]},
+                           headers=auth_headers).status_code == 200
+    assert len(keys) == 2 and keys[0] != keys[1]

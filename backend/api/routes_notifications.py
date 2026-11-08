@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -73,7 +74,11 @@ def send(incident_id: str, payload: SendRequest, user: Reviewer):
             if adapter is None:
                 raise RuntimeError(adapter_error)
             result = adapter.send(draft["recipient_channel"], draft["subject"], draft["body"],
-                                  recipient_label=label, idempotency_key=f"sentinelai:{draft['notification_id']}",
+                                  recipient_label=label,
+                                  # Unique per delivery attempt: notification IDs repeat after a demo
+                                  # reset, and a reused key makes Photon replay the old result
+                                  # without sending. The SDK's own retries reuse this key.
+                                  idempotency_key=f"sentinelai:{draft['notification_id']}:{uuid.uuid4().hex}",
                                   recipient_id=draft["recipient_id"])
         except Exception as exc:  # delivery errors are visible and persisted
             result = {"status": "failed", "detail": str(exc)}
