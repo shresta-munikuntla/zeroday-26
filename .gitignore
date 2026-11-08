@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# SentinelAI local database (rebuild with: python -m backend.database.seed)
+sentinelai.db

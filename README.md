@@ -119,15 +119,23 @@ IPs come from reserved documentation ranges (RFC 5737), so no real address appea
 
 ## Getting started
 
-Right now only the dataset can be regenerated:
-
 ```bash
 git clone https://github.com/shresta-munikuntla/zeroday-26.git
 cd zeroday-26
-python -I data/scripts/generate_seed.py      # rebuilds data/seed/ (deterministic)
+python -m venv .venv && .venv\Scripts\Activate.ps1   # Windows; macOS/Linux: source .venv/bin/activate
+pip install pytest
+
+python -m backend.database.seed                 # build sentinelai.db from data/seed/ (deletes the old one)
+python -m backend.agents.threat_detection       # Agent 1: print detected incidents
+python -m backend.agents.investigation          # Agent 1 + Agent 2: print the investigation
+python -m pytest                                # run all tests
+
+python -I data/scripts/generate_seed.py         # (only if you change the dataset) regenerate data/seed/
 ```
 
-Backend and frontend setup instructions will be added here as those components land. Configuration will live in a local `.env` (copied from `.env.example`) — **never commit real keys**.
+Fixtures for teammates (the real Agent 1 / Agent 2 output for INC-001) live in `backend/tests/fixtures/`.
+
+API, RAG, and frontend setup instructions will be added here as those components land. Configuration will live in a local `.env` (copied from `.env.example`) — **never commit real keys**.
 
 ## Team and ownership
 

@@ -164,8 +164,8 @@ APPROVED_NETWORKS = [
 
 MAINTENANCE_WINDOWS = [
     {"window_id": "MW-001", "description": "Nightly backup job", "recurrence": "daily",
-     "start_time_utc": "02:00", "end_time_utc": "03:00", "account_ids": ["svc_backup"],
-     "asset_ids": ["DC-SRV-01", "DC-SRV-02", "DC-SRV-03", "DC-SRV-04", "DC-SRV-05", "DC-SRV-06", "DC-DB-01"]},
+     "start_time_utc": "02:00", "end_time_utc": "03:00", "account_ids_json": ["svc_backup"],
+     "asset_ids_json": ["DC-SRV-01", "DC-SRV-02", "DC-SRV-03", "DC-SRV-04", "DC-SRV-05", "DC-SRV-06", "DC-DB-01"]},
 ]
 
 

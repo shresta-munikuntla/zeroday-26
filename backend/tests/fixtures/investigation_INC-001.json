@@ -1,0 +1,118 @@
+[
+  {
+    "incident_id": "INC-001",
+    "investigation_status": "potential_unauthorized_access",
+    "timeline": [
+      {
+        "timestamp": "2026-11-07T09:10:00Z",
+        "description": "admin_04 logged in from 198.51.100.24 (IP not in known-IP list or any approved network).",
+        "evidence_ids": [
+          "LOG-101"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:12:00Z",
+        "description": "admin_04 accessed DC-SRV-04 (jump-host-01); permitted by PERM-001.",
+        "evidence_ids": [
+          "LOG-102",
+          "PERM-001"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:14:00Z",
+        "description": "admin_04 accessed DC-SRV-05 (identity-sync-01); PERM-003 expired 2026-10-01.",
+        "evidence_ids": [
+          "LOG-103",
+          "PERM-003"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:16:00Z",
+        "description": "admin_04 attempted to access DC-DB-01 (customer-db-primary) - failure; no permission on record.",
+        "evidence_ids": [
+          "LOG-104"
+        ]
+      },
+      {
+        "timestamp": "2026-11-07T09:18:00Z",
+        "description": "admin_04 attempted to access DC-DB-01 (customer-db-primary) - failure; no permission on record.",
+        "evidence_ids": [
+          "LOG-105"
+        ]
+      }
+    ],
+    "affected_assets": [
+      {
+        "asset_id": "DC-SRV-04",
+        "asset_name": "jump-host-01",
+        "criticality": "high",
+        "owner_team": "Network Security",
+        "authorization": "authorized",
+        "permission_id": "PERM-001",
+        "successful_access_ids": [
+          "LOG-102"
+        ],
+        "denied_access_ids": []
+      },
+      {
+        "asset_id": "DC-SRV-05",
+        "asset_name": "identity-sync-01",
+        "criticality": "high",
+        "owner_team": "Identity Security",
+        "authorization": "expired",
+        "permission_id": "PERM-003",
+        "successful_access_ids": [
+          "LOG-103"
+        ],
+        "denied_access_ids": []
+      },
+      {
+        "asset_id": "DC-DB-01",
+        "asset_name": "customer-db-primary",
+        "criticality": "critical",
+        "owner_team": "Database Administration",
+        "authorization": "none",
+        "permission_id": null,
+        "successful_access_ids": [],
+        "denied_access_ids": [
+          "LOG-104",
+          "LOG-105"
+        ]
+      }
+    ],
+    "potential_impact": "Access without a valid permission may expose services hosted on DC-SRV-05 (identity-sync-01, high). Denied attempts targeted DC-DB-01 (customer-db-primary, critical); no successful access was recorded. No permission changes or data-transfer events were found in the logs.",
+    "confirmed_facts": [
+      "admin_04 logged in from 198.51.100.24, which is not in its known-IP list and not inside any approved network (LOG-101).",
+      "admin_04 accessed DC-SRV-04 under valid permission PERM-001 (LOG-102).",
+      "admin_04 accessed DC-SRV-05 although PERM-003 expired on 2026-10-01 (LOG-103).",
+      "admin_04 made 2 denied attempt(s) to access DC-DB-01; no permission exists (LOG-104, LOG-105).",
+      "Activity occurred on Saturday outside Mon-Fri 07:00-19:00 UTC; admin_04 has no off-hours activity in the previous 7 days (9 events reviewed)."
+    ],
+    "hypotheses": [
+      "The admin_04 credentials may be in use by someone other than the account holder.",
+      "Credentials on DC-SRV-05 may not have been revoked when PERM-003 expired.",
+      "The denied attempts on DC-DB-01 may indicate an attempt to reach a critical asset."
+    ],
+    "benign_explanations_to_check": [
+      "The source IP may be a new or unregistered VPN / remote-access address (verify with Network Security).",
+      "The activity may be unrecorded emergency maintenance (verify with the admin_04 account holder).",
+      "Access to DC-SRV-05 may have been informally extended after PERM-003 expired."
+    ],
+    "checks_performed": [
+      "Source IP(s) 198.51.100.24 checked against approved networks: no match.",
+      "Maintenance windows checked: none cover this activity.",
+      "Event types ['network_connection', 'permission_change'] checked in the window: none found."
+    ],
+    "severity": "high",
+    "confidence": 0.9,
+    "evidence_ids": [
+      "LOG-101",
+      "LOG-102",
+      "LOG-103",
+      "LOG-104",
+      "LOG-105",
+      "PERM-001",
+      "PERM-003"
+    ]
+  }
+]
